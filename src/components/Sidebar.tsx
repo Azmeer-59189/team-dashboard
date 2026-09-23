@@ -15,6 +15,7 @@ export default function Sidebar({
 
   const sharedAdminLinks = [
     { href: "/admin", label: "Overview" },
+    { href: "/admin/my-tasks", label: "My Tasks" }
     { href: "/admin/tasks", label: "All Tasks" },
     { href: "/admin/progress", label: "KPI Progress" },
     { href: "/admin/goals", label: "KPI Goals" },
