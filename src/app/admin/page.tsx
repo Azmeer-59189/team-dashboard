@@ -20,7 +20,7 @@ export default async function AdminOverview({
   const [departments, members] = await Promise.all([
     prisma.department.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
     prisma.user.findMany({
-      where: { role: "MEMBER", ...(scope.isLead ? { departmentId: scope.departmentId } : {}) },
+      where: { role: { in: ["MEMBER", "LEAD"] }, ...(scope.isLead ? { departmentId: scope.departmentId } : {}) },
       select: { id: true, fullName: true },
       orderBy: { fullName: "asc" },
     }),
