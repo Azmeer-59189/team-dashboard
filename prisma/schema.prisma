@@ -2,10 +2,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
-datasource db { 
-  provider = "postgresql" url = env("DATABASE_URL") 
-  directUrl = env("DIRECT_URL") 
-  }
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
 
 enum Role {
   ADMIN
@@ -59,13 +60,13 @@ model User {
 // tasks members tag to it directly. Both are optional; an objective with
 // neither just shows as "no progress data yet".
 model Objective {
-  id               String   @id @default(cuid())
-  departmentId     String
-  title            String
-  description      String?  @db.Text
-  targetTaskCount  Int?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              String   @id @default(cuid())
+  departmentId    String
+  title           String
+  description     String?  @db.Text
+  targetTaskCount Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   goals      Goal[]
