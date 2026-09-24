@@ -7,13 +7,33 @@ import { logAudit } from "@/lib/audit";
 
 export async function GET() {
   const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const scope = getScope(session);
-  if (!canManage(scope)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  if (!canManage(scope)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (scope.isLead && !scope.departmentId) {
+    return NextResponse.json(
+      { error: "Lead user has no department assigned" },
+      { status: 400 }
+    );
+  }
 
   const objectives = await prisma.objective.findMany({
-    where: scope.isLead ? { departmentId: scope.departmentId } : {},
-    include: { department: { select: { name: true } } },
+    where: scope.isLead
+      ? { departmentId: scope.departmentId! }
+      : {},
+    include: {
+      department: {
+        select: { name: true },
+      },
+    },
     orderBy: { createdAt: "asc" },
   });
 
