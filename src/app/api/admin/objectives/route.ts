@@ -12,7 +12,7 @@ export async function GET() {
   if (!canManage(scope)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const objectives = await prisma.objective.findMany({
-    where: scope.isLead ? { departmentId: scope.departmentId } : {},
+    where: scope.isLead && scope.departmentId ? { departmentId: scope.departmentId } : {},
     include: { department: { select: { name: true } } },
     orderBy: { createdAt: "asc" },
   });
