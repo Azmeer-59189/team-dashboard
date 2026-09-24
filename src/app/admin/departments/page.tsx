@@ -49,7 +49,12 @@ export default function DepartmentsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this department? Members in it will keep their tasks but lose their department link.")) return;
-    await fetch(`/api/admin/departments/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/admin/departments/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Could not delete department");
+      return;
+    }
     load();
   }
 

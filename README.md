@@ -114,6 +114,8 @@ Two charts, deliberately minimal:
 
 ## Migrating to your own MySQL database (instead of Neon)
 
+**Status: on hold.** The project is currently back on PostgreSQL/Neon (the schema's `datasource` says `postgresql`) while remote MySQL access is confirmed with the hosting provider. The steps below are kept for when/if that migration resumes — don't follow them against the current schema as-is.
+
 The database layer now uses MySQL (converted from the original PostgreSQL/Neon setup) so it can run against an organization-owned database, e.g. on SiteGround shared hosting.
 
 **Before anything else**, confirm your MySQL database allows remote connections:
@@ -151,6 +153,11 @@ Sits above KPI Goals to give them a strategic "why". Each department can have it
 An Objective's overall progress is the average of whichever of these two are actually in use — if only one is set up, that one is the whole picture; if neither, it just shows "no progress data yet" rather than a misleading number.
 
 Manage them under **Objectives** in the sidebar (Admin sees/creates for any department, Lead is locked to their own).
+
+## Passwords (change & reset)
+
+- Any logged-in user (any role) can change their own password from **Account** in the sidebar — requires knowing the current password.
+- An Admin (or a Lead, for members in their own department) can reset someone else's password from the **Members** page → "Reset password" → enter a new temporary password. This does **not** delete the account or its task history — unlike earlier versions of this project, you never need to recreate a user just to change their password.
 
 ## Project structure
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import StatusBadge from "./StatusBadge";
 
@@ -23,19 +24,32 @@ export default function TaskTable({
   editable?: boolean;
 }) {
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
 
   async function updateStatus(id: string, status: string) {
-    await fetch(`/api/tasks/${id}`, {
+    setError(null);
+    const res = await fetch(`/api/tasks/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Could not update task status");
+      return;
+    }
     router.refresh();
   }
 
   async function deleteTask(id: string) {
     if (!confirm("Delete this task?")) return;
-    await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+    setError(null);
+    const res = await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Could not delete task");
+      return;
+    }
     router.refresh();
   }
 
@@ -45,6 +59,7 @@ export default function TaskTable({
 
   return (
     <div className="overflow-x-auto">
+      {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
       <table className="w-full text-left text-sm">
         <thead>
           <tr className="border-b border-gray-200 text-gray-500">

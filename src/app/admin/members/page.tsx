@@ -89,8 +89,33 @@ export default function MembersPage() {
 
   async function handleRemove(id: string) {
     if (!confirm("Remove this member? This deletes their login and task history.")) return;
-    await fetch(`/api/admin/members/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/admin/members/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      alert(body.error ?? "Could not remove member");
+      return;
+    }
     load();
+  }
+
+  async function handleResetPassword(id: string, name: string) {
+    const newPassword = window.prompt(`New temporary password for ${name} (min 6 characters):`);
+    if (!newPassword) return;
+    if (newPassword.length < 6) {
+      alert("Password must be at least 6 characters");
+      return;
+    }
+    const res = await fetch(`/api/admin/members/${id}/password`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newPassword }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      alert(body.error ?? "Could not reset password");
+      return;
+    }
+    alert(`Password reset. Give ${name} their new temporary password.`);
   }
 
   // Very simple CSV parser: no quoted-comma support, one row per line.
@@ -273,7 +298,13 @@ export default function MembersPage() {
                 <td className="py-2">{m.email}</td>
                 <td className="py-2 capitalize">{m.role}</td>
                 <td className="py-2">{m.departments?.name ?? "—"}</td>
-                <td className="py-2 text-right">
+                <td className="py-2 text-right space-x-3">
+                  <button
+                    onClick={() => handleResetPassword(m.id, m.full_name)}
+                    className="text-xs text-brand-600 hover:underline"
+                  >
+                    Reset password
+                  </button>
                   <button
                     onClick={() => handleRemove(m.id)}
                     className="text-xs text-red-600 hover:underline"

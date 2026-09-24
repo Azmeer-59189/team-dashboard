@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { statusToDb, typeToDb } from "@/lib/format";
+import { validateTaskFields } from "@/lib/validation";
 
 async function canModify(taskId: string, userId: string, isAdmin: boolean) {
   if (isAdmin) return true;
@@ -17,8 +18,19 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const updates = await request.json();
+
+  const validationError = validateTaskFields({
+    type: updates.type,
+    content: updates.content,
+    task_date: updates.task_date,
+    status: updates.status,
+  });
+  if (validationError) {
+    return NextResponse.json({ error: validationError }, { status: 400 });
+  }
+
   const patch: Record<string, unknown> = {};
-  if ("content" in updates) patch.content = updates.content;
+  if ("content" in updates) patch.content = updates.content.trim();
   if ("type" in updates) patch.type = typeToDb(updates.type);
   if ("task_date" in updates) patch.taskDate = new Date(updates.task_date);
   if ("status" in updates) patch.status = statusToDb(updates.status);

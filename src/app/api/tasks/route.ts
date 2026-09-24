@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { statusToDb, typeToDb } from "@/lib/format";
+import { validateTaskFields } from "@/lib/validation";
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -12,8 +13,10 @@ export async function POST(request: Request) {
   if (!type || !content || !task_date) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
-  if (!["text", "link"].includes(type)) {
-    return NextResponse.json({ error: "Invalid task type" }, { status: 400 });
+
+  const validationError = validateTaskFields({ type, content, task_date, status: status ?? "pending" });
+  if (validationError) {
+    return NextResponse.json({ error: validationError }, { status: 400 });
   }
 
   try {
@@ -23,7 +26,7 @@ export async function POST(request: Request) {
         departmentId: session.user.departmentId,
         objectiveId: objective_id || null,
         type: typeToDb(type),
-        content,
+        content: content.trim(),
         taskDate: new Date(task_date),
         status: statusToDb(status ?? "pending"),
       },

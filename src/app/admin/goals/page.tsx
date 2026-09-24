@@ -51,7 +51,7 @@ export default function GoalsPage() {
     const gData = await gRes.json();
     const oData = await oRes.json();
     setDepartments(dData.departments ?? []);
-    setMembers((mData.members ?? []).filter((m: any) => m.role === "member"));
+    setMembers((mData.members ?? []).filter((m: any) => m.role === "member" || m.role === "lead"));
     setDeptGoals(gData.departmentGoals ?? []);
     setMemberGoals(gData.memberGoals ?? []);
     setObjectives((oData.objectives ?? []).map((o: any) => ({ id: o.id, title: o.title, departmentId: o.departmentId })));
@@ -111,7 +111,13 @@ export default function GoalsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this goal?")) return;
-    await fetch(`/api/admin/goals/${id}`, { method: "DELETE" });
+    setError(null);
+    const res = await fetch(`/api/admin/goals/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Could not delete goal");
+      return;
+    }
     load();
   }
 

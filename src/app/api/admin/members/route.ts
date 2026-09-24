@@ -32,6 +32,13 @@ export async function POST(request: Request) {
   if (!full_name || !email || !password || !role) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
+  if (typeof full_name !== "string" || full_name.trim().length === 0 || full_name.trim().length > 200) {
+    return NextResponse.json({ error: "Name must be between 1 and 200 characters" }, { status: 400 });
+  }
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (typeof email !== "string" || !emailPattern.test(email.trim())) {
+    return NextResponse.json({ error: "Please provide a valid email address" }, { status: 400 });
+  }
   if (password.length < 6) {
     return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
   }
@@ -53,8 +60,8 @@ export async function POST(request: Request) {
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
-        fullName: full_name,
-        email,
+        fullName: full_name.trim(),
+        email: email.trim(),
         passwordHash,
         role: dbRole as any,
         departmentId: finalDepartmentId,

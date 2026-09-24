@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
+  // Neon: use a pooled connection for the app, and a direct one for migrations
   directUrl = env("DIRECT_URL")
 }
 
@@ -60,13 +61,13 @@ model User {
 // tasks members tag to it directly. Both are optional; an objective with
 // neither just shows as "no progress data yet".
 model Objective {
-  id              String   @id @default(cuid())
-  departmentId    String
-  title           String
-  description     String?  @db.Text
-  targetTaskCount Int?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String   @id @default(cuid())
+  departmentId     String
+  title            String
+  description      String?  @db.Text
+  targetTaskCount  Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   goals      Goal[]

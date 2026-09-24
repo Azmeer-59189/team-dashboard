@@ -8,6 +8,7 @@ const ACTION_LABELS: Record<string, string> = {
   "member.create": "Added member",
   "member.delete": "Removed member",
   "member.bulk_import": "Bulk imported members",
+  "member.password_reset": "Reset member password",
 };
 
 export default async function AuditLogPage() {

@@ -32,13 +32,18 @@ export default function Sidebar({
     { href: "/admin/departments", label: "Departments" },
     { href: "/admin/audit", label: "Audit Log" },
   ];
+  const accountLink = { href: "/account", label: "Account" };
   const memberLinks = [
     { href: "/member", label: "My Dashboard" },
     { href: "/member/tasks", label: "My Tasks" },
   ];
 
   const links =
-    role === "member" ? memberLinks : role === "admin" ? [...sharedAdminLinks, ...adminOnlyLinks] : sharedAdminLinks;
+    role === "member"
+      ? [...memberLinks, accountLink]
+      : role === "admin"
+      ? [...sharedAdminLinks, ...adminOnlyLinks, accountLink]
+      : [...sharedAdminLinks, accountLink];
 
   async function handleLogout() {
     await signOut({ callbackUrl: "/login" });

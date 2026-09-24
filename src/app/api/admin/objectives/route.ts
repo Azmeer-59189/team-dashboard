@@ -7,33 +7,13 @@ import { logAudit } from "@/lib/audit";
 
 export async function GET() {
   const session = await getSession();
-
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const scope = getScope(session);
-
-  if (!canManage(scope)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  if (scope.isLead && !scope.departmentId) {
-    return NextResponse.json(
-      { error: "Lead user has no department assigned" },
-      { status: 400 }
-    );
-  }
+  if (!canManage(scope)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const objectives = await prisma.objective.findMany({
-    where: scope.isLead
-      ? { departmentId: scope.departmentId! }
-      : {},
-    include: {
-      department: {
-        select: { name: true },
-      },
-    },
+    where: scope.isLead ? { departmentId: scope.departmentId } : {},
+    include: { department: { select: { name: true } } },
     orderBy: { createdAt: "asc" },
   });
 
@@ -57,6 +37,15 @@ export async function POST(request: Request) {
 
   if (!title || typeof title !== "string" || !title.trim()) {
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
+  }
+  if (title.trim().length > 200) {
+    return NextResponse.json({ error: "Title must be under 200 characters" }, { status: 400 });
+  }
+  if (targetTaskCount !== null && targetTaskCount !== undefined && targetTaskCount !== "") {
+    const n = Number(targetTaskCount);
+    if (!Number.isFinite(n) || n <= 0) {
+      return NextResponse.json({ error: "Task target must be a positive number" }, { status: 400 });
+    }
   }
   let finalDepartmentId = departmentId;
   if (scope.isLead) finalDepartmentId = scope.departmentId;

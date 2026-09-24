@@ -76,7 +76,13 @@ export default function ObjectivesPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this objective? KPIs and tasks linked to it will stay, just unlinked.")) return;
-    await fetch(`/api/admin/objectives/${id}`, { method: "DELETE" });
+    setError(null);
+    const res = await fetch(`/api/admin/objectives/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Could not delete objective");
+      return;
+    }
     load();
   }
 

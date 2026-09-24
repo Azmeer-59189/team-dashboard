@@ -25,6 +25,9 @@ export async function POST(request: Request) {
   if (!name || typeof name !== "string" || !name.trim()) {
     return NextResponse.json({ error: "Department name is required" }, { status: 400 });
   }
+  if (name.trim().length > 100) {
+    return NextResponse.json({ error: "Department name must be under 100 characters" }, { status: 400 });
+  }
 
   try {
     const department = await prisma.department.create({ data: { name: name.trim() } });
