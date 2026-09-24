@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -33,42 +35,74 @@ export default function LoginPage() {
     router.refresh();
   }
 
+  function fillDemo(role: "admin" | "lead" | "member") {
+    const creds = {
+      admin: { email: "demo-admin@example.com", password: "demopass123" },
+      lead: { email: "demo-lead@example.com", password: "demopass123" },
+      member: { email: "demo-ava.chen@example.com", password: "demopass123" },
+    }[role];
+    setEmail(creds.email);
+    setPassword(creds.password);
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm card">
-        <h1 className="mb-1 text-xl font-semibold">Team Dashboard</h1>
-        <p className="mb-6 text-sm text-gray-500">
-          Sign in with the account your admin created for you.
-        </p>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium">Email</label>
-            <input
-              type="email"
-              required
-              className="input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+      <div className="w-full max-w-sm space-y-4">
+        {DEMO_MODE && (
+          <div className="card border-brand-200 bg-brand-50">
+            <p className="mb-2 text-sm font-semibold text-brand-700">This is a public demo</p>
+            <p className="mb-3 text-xs text-gray-600">
+              Sample data only, no real organization data. Click a role to fill in demo credentials:
+            </p>
+            <div className="flex gap-2">
+              <button onClick={() => fillDemo("admin")} className="btn-secondary text-xs">
+                Admin
+              </button>
+              <button onClick={() => fillDemo("lead")} className="btn-secondary text-xs">
+                Lead
+              </button>
+              <button onClick={() => fillDemo("member")} className="btn-secondary text-xs">
+                Member
+              </button>
+            </div>
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Password</label>
-            <input
-              type="password"
-              required
-              className="input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
+        )}
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+        <div className="card">
+          <h1 className="mb-1 text-xl font-semibold">Team Dashboard</h1>
+          <p className="mb-6 text-sm text-gray-500">
+            Sign in with the account your admin created for you.
+          </p>
 
-          <button type="submit" disabled={loading} className="btn-primary w-full">
-            {loading ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium">Email</label>
+              <input
+                type="email"
+                required
+                className="input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Password</label>
+              <input
+                type="password"
+                required
+                className="input"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+
+            {error && <p className="text-sm text-red-600">{error}</p>}
+
+            <button type="submit" disabled={loading} className="btn-primary w-full">
+              {loading ? "Signing in..." : "Sign in"}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

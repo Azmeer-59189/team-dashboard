@@ -12,7 +12,7 @@ export async function GET() {
   const [departmentGoals, memberGoals] = await Promise.all([
     prisma.goal.findMany({
       where: { departmentId: scope.isLead ? scope.departmentId : { not: null } },
-      include: { department: { select: { name: true } } },
+      include: { department: { select: { name: true } }, objective: { select: { title: true } } },
       orderBy: [{ period: "asc" }],
     }),
     prisma.goal.findMany({
@@ -20,7 +20,10 @@ export async function GET() {
         userId: { not: null },
         ...(scope.isLead ? { user: { departmentId: scope.departmentId } } : {}),
       },
-      include: { user: { select: { fullName: true, department: { select: { name: true } } } } },
+      include: {
+        user: { select: { fullName: true, department: { select: { name: true } } } },
+        objective: { select: { title: true } },
+      },
       orderBy: [{ period: "asc" }],
     }),
   ]);
@@ -32,6 +35,8 @@ export async function GET() {
       departmentName: g.department?.name,
       period: g.period,
       targetCount: g.targetCount,
+      objectiveId: g.objectiveId,
+      objectiveTitle: (g as any).objective?.title ?? null,
     })),
     memberGoals: memberGoals.map((g) => ({
       id: g.id,
@@ -40,6 +45,8 @@ export async function GET() {
       departmentName: g.user?.department?.name ?? null,
       period: g.period,
       targetCount: g.targetCount,
+      objectiveId: g.objectiveId,
+      objectiveTitle: (g as any).objective?.title ?? null,
     })),
   });
 }
@@ -50,7 +57,7 @@ export async function POST(request: Request) {
   const scope = getScope(session);
   if (!canManage(scope)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { scope: goalScope, departmentId, userId, period, targetCount } = await request.json();
+  const { scope: goalScope, departmentId, userId, period, targetCount, objectiveId } = await request.json();
 
   if (!["department", "member"].includes(goalScope)) {
     return NextResponse.json({ error: "Invalid scope" }, { status: 400 });
@@ -71,8 +78,8 @@ export async function POST(request: Request) {
       }
       const goal = await prisma.goal.upsert({
         where: { departmentId_period: { departmentId, period } },
-        create: { departmentId, period, targetCount: target },
-        update: { targetCount: target },
+        create: { departmentId, period, targetCount: target, objectiveId: objectiveId || null },
+        update: { targetCount: target, objectiveId: objectiveId || null },
       });
       return NextResponse.json({ goal });
     } else {
@@ -85,8 +92,8 @@ export async function POST(request: Request) {
       }
       const goal = await prisma.goal.upsert({
         where: { userId_period: { userId, period } },
-        create: { userId, period, targetCount: target },
-        update: { targetCount: target },
+        create: { userId, period, targetCount: target, objectiveId: objectiveId || null },
+        update: { targetCount: target, objectiveId: objectiveId || null },
       });
       return NextResponse.json({ goal });
     }

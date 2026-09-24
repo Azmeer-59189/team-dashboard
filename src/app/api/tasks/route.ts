@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { type, content, task_date, status } = await request.json();
+  const { type, content, task_date, status, objective_id } = await request.json();
 
   if (!type || !content || !task_date) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -21,6 +21,7 @@ export async function POST(request: Request) {
       data: {
         userId: session.user.id,
         departmentId: session.user.departmentId,
+        objectiveId: objective_id || null,
         type: typeToDb(type),
         content,
         taskDate: new Date(task_date),

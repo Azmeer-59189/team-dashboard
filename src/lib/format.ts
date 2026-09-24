@@ -13,8 +13,8 @@ export function statusFromDb(status: string) {
 export function typeToDb(type: string) {
   return type.toUpperCase() as "TEXT" | "LINK";
 }
-export function typeFromDb(type: string) { 
-  return type.toLowerCase() as "text" | "link"; 
+export function typeFromDb(type: string) {
+  return type.toLowerCase() as "text" | "link";
 }
 
 type TaskWithRelations = Task & {

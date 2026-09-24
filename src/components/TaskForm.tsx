@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function TaskForm() {
@@ -9,8 +9,17 @@ export default function TaskForm() {
   const [content, setContent] = useState("");
   const [taskDate, setTaskDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [status, setStatus] = useState("pending");
+  const [objectiveId, setObjectiveId] = useState("");
+  const [objectives, setObjectives] = useState<{ id: string; title: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/objectives")
+      .then((r) => r.json())
+      .then((d) => setObjectives(d.objectives ?? []))
+      .catch(() => setObjectives([]));
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -20,7 +29,7 @@ export default function TaskForm() {
     const res = await fetch("/api/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type, content, task_date: taskDate, status }),
+      body: JSON.stringify({ type, content, task_date: taskDate, status, objective_id: objectiveId || null }),
     });
 
     setLoading(false);
@@ -101,6 +110,20 @@ export default function TaskForm() {
           </select>
         </div>
       </div>
+
+      {objectives.length > 0 && (
+        <div>
+          <label className="mb-1 block text-sm font-medium">Objective (optional)</label>
+          <select className="input" value={objectiveId} onChange={(e) => setObjectiveId(e.target.value)}>
+            <option value="">None</option>
+            {objectives.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.title}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 

@@ -16,7 +16,7 @@ export default async function ProgressPage({
 
   const members = await prisma.user.findMany({
     where: {
-      role: "MEMBER",
+      role: { in: ["MEMBER", "LEAD"] },
       ...(scope.isLead ? { departmentId: scope.departmentId } : searchParams.department ? { departmentId: searchParams.department } : {}),
     },
     include: { department: { select: { name: true } } },

@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 export default function Sidebar({
   role,
@@ -12,11 +15,14 @@ export default function Sidebar({
   name: string;
 }) {
   const pathname = usePathname();
+  const [resetting, setResetting] = useState(false);
+  const [resetMsg, setResetMsg] = useState<string | null>(null);
 
   const sharedAdminLinks = [
     { href: "/admin", label: "Overview" },
     { href: "/admin/my-tasks", label: "My Tasks" },
     { href: "/admin/tasks", label: "All Tasks" },
+    { href: "/admin/objectives", label: "Objectives" },
     { href: "/admin/progress", label: "KPI Progress" },
     { href: "/admin/goals", label: "KPI Goals" },
     { href: "/admin/consistency", label: "Consistency" },
@@ -36,6 +42,16 @@ export default function Sidebar({
 
   async function handleLogout() {
     await signOut({ callbackUrl: "/login" });
+  }
+
+  async function handleResetDemo() {
+    if (!confirm("Reset all demo data back to sample state? This wipes anything visitors have added.")) return;
+    setResetting(true);
+    setResetMsg(null);
+    const res = await fetch("/api/admin/demo-reset", { method: "POST" });
+    setResetting(false);
+    setResetMsg(res.ok ? "Demo data reset." : "Reset failed.");
+    setTimeout(() => window.location.reload(), 1200);
   }
 
   return (
@@ -60,7 +76,13 @@ export default function Sidebar({
           </Link>
         ))}
       </nav>
-      <div className="border-t border-gray-200 p-3">
+      <div className="border-t border-gray-200 p-3 space-y-2">
+        {DEMO_MODE && role === "admin" && (
+          <button onClick={handleResetDemo} disabled={resetting} className="btn-secondary w-full text-xs">
+            {resetting ? "Resetting..." : "Reset Demo Data"}
+          </button>
+        )}
+        {resetMsg && <p className="text-center text-xs text-gray-500">{resetMsg}</p>}
         <button onClick={handleLogout} className="btn-secondary w-full">
           Log out
         </button>

@@ -2,12 +2,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  // Neon: use a pooled connection for the app, and a direct one for migrations
-  directUrl = env("DIRECT_URL")
-}
+datasource db { 
+  provider = "postgresql" url = env("DATABASE_URL") 
+  directUrl = env("DIRECT_URL") 
+  }
 
 enum Role {
   ADMIN
@@ -36,9 +34,10 @@ model Department {
   name      String   @unique
   createdAt DateTime @default(now())
 
-  users User[]
-  tasks Task[]
-  goals Goal[]
+  users      User[]
+  tasks      Task[]
+  goals      Goal[]
+  objectives Objective[]
 }
 
 model User {
@@ -55,6 +54,26 @@ model User {
   goals      Goal[]
 }
 
+// A department's monthly "why" - what its KPIs are actually in service of.
+// Progress comes from two places: any Goals (KPIs) linked to it, and any
+// tasks members tag to it directly. Both are optional; an objective with
+// neither just shows as "no progress data yet".
+model Objective {
+  id               String   @id @default(cuid())
+  departmentId     String
+  title            String
+  description      String?  @db.Text
+  targetTaskCount  Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  goals      Goal[]
+  tasks      Task[]
+
+  @@index([departmentId])
+}
+
 // A KPI target. Exactly one of departmentId / userId is set:
 // - departmentId set, userId null  -> default target for everyone in that department
 // - userId set, departmentId null  -> individual override for one member (wins over the department default for that period)
@@ -62,6 +81,7 @@ model Goal {
   id           String     @id @default(cuid())
   departmentId String?
   userId       String?
+  objectiveId  String?
   period       GoalPeriod
   targetCount  Int
   createdAt    DateTime   @default(now())
@@ -69,6 +89,7 @@ model Goal {
 
   department Department? @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   user       User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  objective  Objective?  @relation(fields: [objectiveId], references: [id], onDelete: SetNull)
 
   @@unique([departmentId, period])
   @@unique([userId, period])
@@ -91,8 +112,9 @@ model Task {
   id           String     @id @default(cuid())
   userId       String
   departmentId String?
+  objectiveId  String?
   type         TaskType
-  content      String
+  content      String     @db.Text
   taskDate     DateTime   @db.Date
   status       TaskStatus @default(PENDING)
   createdAt    DateTime   @default(now())
@@ -100,6 +122,7 @@ model Task {
 
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  objective  Objective?  @relation(fields: [objectiveId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([departmentId])

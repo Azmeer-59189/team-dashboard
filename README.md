@@ -112,6 +112,46 @@ Two charts, deliberately minimal:
   - A department selected (or a Lead's locked view) → bar chart comparing tasks **across members in that department**
   - A specific member selected → line chart of that person's **tasks per day**
 
+## Migrating to your own MySQL database (instead of Neon)
+
+The database layer now uses MySQL (converted from the original PostgreSQL/Neon setup) so it can run against an organization-owned database, e.g. on SiteGround shared hosting.
+
+**Before anything else**, confirm your MySQL database allows remote connections:
+1. In SiteGround Site Tools → Databases → MySQL → Remote MySQL, add an allowed host. Adding `%` allows any IP (needed since Vercel doesn't provide a fixed IP without an enterprise add-on). If your host's policy won't allow wildcard remote access, this whole approach is blocked regardless of code — worth confirming with your host/IT first.
+2. Note the actual **remote hostname** SiteGround gives you for the database — it is *not* `localhost` (that only works for apps running on the same server).
+
+**Then:**
+1. Set `DATABASE_URL` to `mysql://user:password@remote-host:3306/database_name` in both your local `.env` and in Vercel's project environment variables. There's no separate `DIRECT_URL` needed for MySQL (that was a Neon-specific pooling detail) — remove it from Vercel's env vars if it's still there.
+2. Run `npx prisma db push` to create the tables in the new database.
+3. Run `npm run seed` to create your first admin account (fresh start — no data is carried over from Neon).
+4. Redeploy on Vercel (push to GitHub, or trigger a redeploy) so it picks up the new `DATABASE_URL`.
+
+The app itself still runs on Vercel — only the database moved. Vercel + a self-hosted database is a normal, supported setup.
+
+## Public demo deployment (for portfolio/sharing)
+
+Your real deployment stays private with real organization data. For a portfolio link, deploy a **second, separate instance** with fake sample data instead:
+
+1. **Separate database**: create a second free database just for this (a new free Neon project is easiest, since it's just sample data — no org policy involved). Do not point this at your real organization's database.
+2. **Separate Vercel project**: import the same GitHub repo again as a new Vercel project (e.g. `team-dashboard-demo`). Give it its own environment variables:
+   - `DATABASE_URL` → the new demo-only database
+   - `NEXTAUTH_SECRET` → a fresh one (different from your real deployment)
+   - `NEXTAUTH_URL` → this demo project's URL
+   - `NEXT_PUBLIC_DEMO_MODE` → `true` (this turns on the demo credentials banner on the login page and the "Reset Demo Data" button)
+3. After the first deploy, run `npx prisma db push` against the demo database, then `npm run seed:demo` (locally, with your `.env` pointed at the demo database) to fill it with realistic fake departments, members, and tasks.
+4. Share the demo project's URL in your portfolio/GitHub. The login page will show one-click buttons to fill in demo admin/lead/member credentials — visitors never need real credentials, and never touch your organization's actual data.
+5. Since visitors can edit/delete things in the demo, log in as the demo admin any time and click **"Reset Demo Data"** in the sidebar to wipe it back to the original sample state.
+
+## Objectives (new)
+
+Sits above KPI Goals to give them a strategic "why". Each department can have its own Objectives, tracked monthly, with progress from **two combined sources**:
+1. **Linked KPIs** — on the KPI Goals page, optionally link any department or individual KPI to an Objective. Its progress rolls into the Objective as an average completion % across whoever the KPI applies to.
+2. **Directly-tagged tasks** — when submitting a task, members can optionally tag it to an Objective (only objectives for their own department show up). If the Objective has a monthly task target set, progress shows as done-tagged-tasks vs. that target.
+
+An Objective's overall progress is the average of whichever of these two are actually in use — if only one is set up, that one is the whole picture; if neither, it just shows "no progress data yet" rather than a misleading number.
+
+Manage them under **Objectives** in the sidebar (Admin sees/creates for any department, Lead is locked to their own).
+
 ## Project structure
 
 ```
