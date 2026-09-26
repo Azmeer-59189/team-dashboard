@@ -60,7 +60,7 @@ export default function DepartmentsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Departments</h1>
+      <h1 className="font-display text-xl font-semibold text-ink">Departments</h1>
 
       {isAdmin && (
         <form onSubmit={handleAdd} className="card flex items-end gap-3">
@@ -84,14 +84,14 @@ export default function DepartmentsPage() {
       <div className="card">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-gray-500">
+            <tr className="border-b border-hairline text-muted">
               <th className="py-2">Name</th>
               {isAdmin && <th className="py-2"></th>}
             </tr>
           </thead>
           <tbody>
             {departments.map((d) => (
-              <tr key={d.id} className="border-b border-gray-100">
+              <tr key={d.id} className="border-b border-hairline/60">
                 <td className="py-2">{d.name}</td>
                 {isAdmin && (
                   <td className="py-2 text-right">
@@ -107,7 +107,7 @@ export default function DepartmentsPage() {
             ))}
             {departments.length === 0 && (
               <tr>
-                <td colSpan={2} className="py-6 text-center text-gray-500">
+                <td colSpan={2} className="py-6 text-center text-muted">
                   No departments yet.
                 </td>
               </tr>

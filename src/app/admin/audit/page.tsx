@@ -23,14 +23,14 @@ export default async function AuditLogPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold">Audit Log</h1>
-        <p className="text-sm text-gray-500">Who added or removed which department or member, most recent first.</p>
+        <h1 className="font-display text-xl font-semibold text-ink">Audit Log</h1>
+        <p className="text-sm text-muted">Who added or removed which department or member, most recent first.</p>
       </div>
 
       <div className="card">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-gray-500">
+            <tr className="border-b border-hairline text-muted">
               <th className="py-2">When</th>
               <th className="py-2">Who</th>
               <th className="py-2">Action</th>
@@ -39,7 +39,7 @@ export default async function AuditLogPage() {
           </thead>
           <tbody>
             {logs.map((log) => (
-              <tr key={log.id} className="border-b border-gray-100">
+              <tr key={log.id} className="border-b border-hairline/60">
                 <td className="py-2 whitespace-nowrap">{log.createdAt.toLocaleString()}</td>
                 <td className="py-2">{log.actorName}</td>
                 <td className="py-2">{ACTION_LABELS[log.action] ?? log.action}</td>
@@ -48,7 +48,7 @@ export default async function AuditLogPage() {
             ))}
             {logs.length === 0 && (
               <tr>
-                <td colSpan={4} className="py-6 text-center text-gray-500">
+                <td colSpan={4} className="py-6 text-center text-muted">
                   No activity logged yet.
                 </td>
               </tr>

@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { formatTask } from "@/lib/format";
-import { getMemberGoalProgress } from "@/lib/goals";
+import { getMemberGoalProgress, getPeriodRange } from "@/lib/goals";
 import TaskForm from "@/components/TaskForm";
 import TaskTable from "@/components/TaskTable";
 import StatCard from "@/components/StatCard";
@@ -17,22 +17,38 @@ export default async function MemberDashboard() {
   thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 29);
   thirtyDaysAgo.setUTCHours(0, 0, 0, 0);
 
-  const [tasks, doneCount, pendingCount, inProgressCount, totalCount, goals, recentTasks] = await Promise.all([
-    prisma.task.findMany({
-      where: { userId },
-      orderBy: { taskDate: "desc" },
-      take: 10,
-    }),
-    prisma.task.count({ where: { userId, status: "DONE" } }),
-    prisma.task.count({ where: { userId, status: "PENDING" } }),
-    prisma.task.count({ where: { userId, status: "IN_PROGRESS" } }),
-    prisma.task.count({ where: { userId } }),
-    getMemberGoalProgress(userId, session!.user.departmentId),
-    prisma.task.findMany({
-      where: { userId, taskDate: { gte: thirtyDaysAgo } },
-      select: { taskDate: true },
-    }),
-  ]);
+  const thisMonth = getPeriodRange("MONTHLY");
+  const lastMonthRef = new Date(thisMonth.start);
+  lastMonthRef.setUTCMonth(lastMonthRef.getUTCMonth() - 1);
+  const lastMonth = getPeriodRange("MONTHLY", lastMonthRef);
+
+  const [tasks, doneCount, pendingCount, inProgressCount, totalCount, goals, recentTasks, doneThisMonth, doneLastMonth] =
+    await Promise.all([
+      prisma.task.findMany({
+        where: { userId },
+        orderBy: { taskDate: "desc" },
+        take: 10,
+      }),
+      prisma.task.count({ where: { userId, status: "DONE" } }),
+      prisma.task.count({ where: { userId, status: "PENDING" } }),
+      prisma.task.count({ where: { userId, status: "IN_PROGRESS" } }),
+      prisma.task.count({ where: { userId } }),
+      getMemberGoalProgress(userId, session!.user.departmentId),
+      prisma.task.findMany({
+        where: { userId, taskDate: { gte: thirtyDaysAgo } },
+        select: { taskDate: true },
+      }),
+      prisma.task.count({ where: { userId, status: "DONE", taskDate: { gte: thisMonth.start, lte: thisMonth.end } } }),
+      prisma.task.count({ where: { userId, status: "DONE", taskDate: { gte: lastMonth.start, lte: lastMonth.end } } }),
+    ]);
+
+  const heroTrend =
+    doneLastMonth > 0
+      ? {
+          direction: (doneThisMonth >= doneLastMonth ? "up" : "down") as "up" | "down",
+          label: `${Math.abs(Math.round(((doneThisMonth - doneLastMonth) / doneLastMonth) * 100))}% vs last month`,
+        }
+      : null;
 
   const byDate = new Map<string, number>();
   for (const t of recentTasks) {
@@ -46,18 +62,19 @@ export default async function MemberDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold">Welcome, {session!.user.name}</h1>
-        <p className="text-sm text-gray-500">Log today's work below.</p>
+        <h1 className="font-display text-xl font-semibold text-ink">Welcome, {session!.user.name}</h1>
+        <p className="text-sm text-muted">Log today's work below.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <StatCard label="Done this month" value={doneThisMonth} trend={heroTrend} />
         <StatCard label="Total tasks logged" value={totalCount} />
-        <StatCard label="Tasks done" value={doneCount} />
+        <StatCard label="Tasks done (all time)" value={doneCount} />
       </div>
 
       {goals.length > 0 && (
         <div className="card space-y-3">
-          <h2 className="font-semibold">Your KPI</h2>
+          <h2 className="font-display font-semibold text-ink">Your KPI</h2>
           {goals.map((g) => (
             <ProgressBar
               key={g.period}
@@ -71,11 +88,11 @@ export default async function MemberDashboard() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="card">
-          <h2 className="mb-2 font-semibold">Your task status</h2>
+          <h2 className="mb-2 font-display font-semibold text-ink">Your task status</h2>
           <StatusPieChart pending={pendingCount} inProgress={inProgressCount} done={doneCount} />
         </div>
         <div className="card">
-          <h2 className="mb-2 font-semibold">Last 30 days</h2>
+          <h2 className="mb-2 font-display font-semibold text-ink">Last 30 days</h2>
           <TrendChart data={trendData} />
         </div>
       </div>
@@ -83,7 +100,7 @@ export default async function MemberDashboard() {
       <TaskForm />
 
       <div className="card">
-        <h2 className="mb-3 font-semibold">Recent tasks</h2>
+        <h2 className="mb-3 font-display font-semibold text-ink">Recent tasks</h2>
         <TaskTable tasks={tasks.map(formatTask)} editable />
       </div>
     </div>

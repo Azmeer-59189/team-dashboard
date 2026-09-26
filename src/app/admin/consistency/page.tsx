@@ -49,8 +49,8 @@ export default async function ConsistencyPage({
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold">Consistency</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="font-display text-xl font-semibold text-ink">Consistency</h1>
+        <p className="text-sm text-muted">
           Days with at least one task logged, out of the last {WINDOW_DAYS} days. Any status counts here (not just "done") — this tracks who's showing up, not just who's finishing work.
         </p>
       </div>
@@ -59,7 +59,7 @@ export default async function ConsistencyPage({
         <div className="card flex items-end gap-4">
           <form method="get" className="flex items-end gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-500">Department</label>
+              <label className="mb-1 block text-xs font-medium text-muted">Department</label>
               <select name="department" defaultValue={searchParams.department ?? ""} className="input">
                 <option value="">All departments</option>
                 {departments.map((d) => (
@@ -81,12 +81,12 @@ export default async function ConsistencyPage({
           <div key={member.id}>
             <div className="mb-1 flex items-baseline justify-between">
               <span className="text-sm font-medium">{member.fullName}</span>
-              <span className="text-xs text-gray-500">{member.department?.name ?? "No department"}</span>
+              <span className="text-xs text-muted">{member.department?.name ?? "No department"}</span>
             </div>
             <ProgressBar label="Active days" progress={distinctDays} target={WINDOW_DAYS} />
           </div>
         ))}
-        {rows.length === 0 && <p className="text-sm text-gray-500">No members found.</p>}
+        {rows.length === 0 && <p className="text-sm text-muted">No members found.</p>}
       </div>
     </div>
   );

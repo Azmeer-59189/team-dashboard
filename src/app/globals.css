@@ -2,26 +2,103 @@
 @tailwind components;
 @tailwind utilities;
 
+html { min-height: 100%; }
+
 body {
-  @apply bg-gray-50 text-gray-900;
+  @apply min-h-screen bg-canvas text-ink font-sans antialiased;
+  background-image: radial-gradient(ellipse at 50% 0%, rgba(15, 110, 92, 0.045), transparent 46%);
 }
 
+h1, h2, h3, .font-display {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+/* Standard card: hairline border, no shadow by default - shadow is reserved
+   for the one hero stat per page, per the design plan. */
 .card {
-  @apply bg-white rounded-xl border border-gray-200 shadow-sm p-5;
+  @apply bg-surface rounded-2xl border border-hairline p-5;
+  box-shadow: 0 2px 8px rgba(20, 23, 31, 0.035), 0 12px 28px rgba(20, 23, 31, 0.025);
+}
+
+h1 {
+  font-size: clamp(1.45rem, 2vw, 1.8rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+}
+
+h2 {
+  letter-spacing: -0.02em;
+}
+
+table {
+  @apply w-full text-sm;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th {
+  @apply py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted;
+}
+
+td {
+  @apply py-3;
+}
+
+tbody tr {
+  transition: background-color 150ms ease;
+}
+
+tbody tr:hover {
+  background-color: rgba(15, 110, 92, 0.035);
 }
 
 .btn-primary {
-  @apply inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50;
+  @apply inline-flex items-center justify-center rounded-xl bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-brand-600 hover:shadow-sm disabled:opacity-50;
 }
 
 .btn-secondary {
-  @apply inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50;
+  @apply inline-flex items-center justify-center rounded-xl border border-hairline bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-brand-100 hover:bg-brand-50/50;
 }
 
 .input {
-  @apply w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500;
+  @apply w-full rounded-lg border border-hairline bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500;
 }
 
 .badge {
   @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+}
+
+/* Hero stat: the one bold number per page. Reserve this for exactly one
+   metric - everything else stays quiet (.stat-secondary). */
+.stat-hero {
+  @apply rounded-2xl border border-brand-100 bg-surface p-6 shadow-sm;
+  box-shadow: 0 8px 26px rgba(15, 110, 92, 0.07);
+}
+.stat-hero-value {
+  @apply font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl;
+}
+.stat-hero-label {
+  @apply text-sm text-muted;
+}
+
+.stat-secondary {
+  @apply rounded-lg border border-hairline bg-surface p-4;
+}
+.stat-secondary-value {
+  @apply font-display text-xl font-semibold text-ink;
+}
+.stat-secondary-label {
+  @apply text-xs text-muted;
+}
+
+/* Trend pill: small, quiet, colored by direction. No icon glyphs -
+   a plain triangle character keeps it dependency-free. */
+.trend-pill {
+  @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;
+}
+.trend-pill-up {
+  @apply bg-positive/10 text-positive;
+}
+.trend-pill-down {
+  @apply bg-danger/10 text-danger;
 }

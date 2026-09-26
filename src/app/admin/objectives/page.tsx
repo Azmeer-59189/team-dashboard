@@ -89,8 +89,8 @@ export default function ObjectivesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold">Objectives</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="font-display text-xl font-semibold text-ink">Objectives</h1>
+        <p className="text-sm text-muted">
           The "why" behind your KPIs. Link existing KPIs to an objective on the KPI Goals page, and members
           can optionally tag their tasks to one when they log work. Progress resets each month.
         </p>
@@ -157,14 +157,14 @@ export default function ObjectivesPage() {
           <div key={o.id} className="card space-y-3">
             <div className="flex items-start justify-between">
               <div>
-                <p className="font-semibold">{o.title}</p>
-                <p className="text-xs text-gray-500">{o.departmentName}</p>
+                <p className="font-display font-semibold text-ink">{o.title}</p>
+                <p className="text-xs text-muted">{o.departmentName}</p>
               </div>
               <button onClick={() => handleDelete(o.id)} className="text-xs text-red-600 hover:underline">
                 Delete
               </button>
             </div>
-            {o.description && <p className="text-sm text-gray-600">{o.description}</p>}
+            {o.description && <p className="text-sm text-muted">{o.description}</p>}
 
             {o.overallPct !== null ? (
               <ProgressBar label="Overall this month" progress={o.overallPct} target={100} />
@@ -173,20 +173,20 @@ export default function ObjectivesPage() {
             )}
 
             {o.kpiAveragePct !== null && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted">
                 {o.linkedGoalCount} linked KPI{o.linkedGoalCount === 1 ? "" : "s"}, averaging {o.kpiAveragePct}%
                 completion this month
               </p>
             )}
             {o.taskProgress && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted">
                 {o.taskProgress.done} / {o.taskProgress.target} tagged tasks done this month
               </p>
             )}
           </div>
         ))}
         {objectives.length === 0 && (
-          <p className="text-sm text-gray-500">No objectives yet — create one above.</p>
+          <p className="text-sm text-muted">No objectives yet — create one above.</p>
         )}
       </div>
     </div>

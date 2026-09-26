@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getScope } from "@/lib/scope";
 import { formatTask, statusToDb } from "@/lib/format";
+import { getPeriodRange } from "@/lib/goals";
 import StatCard from "@/components/StatCard";
 import FilterBar from "@/components/FilterBar";
 import TaskTable from "@/components/TaskTable";
@@ -17,10 +18,38 @@ export default async function AdminOverview({
   const session = await getSession();
   const scope = getScope(session!);
 
+  // Hero stat: tasks done this month vs last month, org-wide (or dept-wide for a lead).
+  // Deliberately independent of the filter bar below - this is the one headline number,
+  // the filtered stats/charts further down are the detail view.
+  const heroWhere: any = { status: "DONE" };
+  if (scope.isLead) heroWhere.departmentId = scope.departmentId;
+  const thisMonth = getPeriodRange("MONTHLY");
+  const lastMonthRef = new Date(thisMonth.start);
+  lastMonthRef.setUTCMonth(lastMonthRef.getUTCMonth() - 1);
+  const lastMonth = getPeriodRange("MONTHLY", lastMonthRef);
+  const [doneThisMonth, doneLastMonth] = await Promise.all([
+    prisma.task.count({ where: { ...heroWhere, taskDate: { gte: thisMonth.start, lte: thisMonth.end } } }),
+    prisma.task.count({ where: { ...heroWhere, taskDate: { gte: lastMonth.start, lte: lastMonth.end } } }),
+  ]);
+  const heroTrend =
+    doneLastMonth > 0
+      ? {
+          direction: (doneThisMonth >= doneLastMonth ? "up" : "down") as "up" | "down",
+          label: `${Math.abs(Math.round(((doneThisMonth - doneLastMonth) / doneLastMonth) * 100))}% vs last month`,
+        }
+      : null;
+
   const [departments, members] = await Promise.all([
     prisma.department.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
     prisma.user.findMany({
-      where: { role: { in: ["MEMBER", "LEAD"] }, ...(scope.isLead ? { departmentId: scope.departmentId } : {}) },
+      where: {
+        role: { in: ["MEMBER", "LEAD"] },
+        ...(scope.isLead
+          ? { departmentId: scope.departmentId }
+          : searchParams.department
+          ? { departmentId: searchParams.department }
+          : {}),
+      },
       select: { id: true, fullName: true },
       orderBy: { fullName: "asc" },
     }),
@@ -108,8 +137,8 @@ export default async function AdminOverview({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold">Overview</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="font-display text-xl font-semibold text-ink">Overview</h1>
+        <p className="text-sm text-muted">
           {scope.isLead ? "Your department's performance at a glance." : "Team-wide performance at a glance."}
         </p>
       </div>
@@ -120,7 +149,12 @@ export default async function AdminOverview({
         hideDepartment={scope.isLead}
       />
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className={`grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 ${scope.isLead ? "2xl:grid-cols-6" : "2xl:grid-cols-7"}`}>
+        <StatCard
+          label={scope.isLead ? "Done this month · department" : "Done this month · org-wide"}
+          value={doneThisMonth}
+          trend={heroTrend}
+        />
         <StatCard label="Members" value={memberCount} />
         {!scope.isLead && <StatCard label="Departments" value={deptCount} />}
         <StatCard label="Tasks (filtered)" value={total} />
@@ -131,11 +165,11 @@ export default async function AdminOverview({
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="card">
-          <h2 className="mb-2 font-semibold">Status breakdown</h2>
+          <h2 className="mb-2 font-display font-semibold text-ink">Status breakdown</h2>
           <StatusPieChart pending={pending} inProgress={inProgress} done={done} />
         </div>
         <div className="card">
-          <h2 className="mb-2 font-semibold">
+          <h2 className="mb-2 font-display font-semibold text-ink">
             {chartMode === "trend" ? "Daily tasks (this selection)" : chartMode === "byMember" ? "Tasks by member" : "Tasks by department"}
           </h2>
           {chartMode === "trend" ? <TrendChart data={trendData} /> : <ComparisonBarChart data={barData} />}
@@ -143,7 +177,7 @@ export default async function AdminOverview({
       </div>
 
       <div className="card">
-        <h2 className="mb-3 font-semibold">Tasks</h2>
+        <h2 className="mb-3 font-display font-semibold text-ink">Tasks</h2>
         <TaskTable tasks={tasks.map((t) => formatTask({ ...t, user: t.user, department: t.department }))} showOwner />
       </div>
     </div>

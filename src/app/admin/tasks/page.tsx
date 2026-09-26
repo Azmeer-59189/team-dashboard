@@ -51,7 +51,7 @@ export default async function AdminTasksPage({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">All Tasks</h1>
+        <h1 className="font-display text-xl font-semibold text-ink">All Tasks</h1>
         <a href={`/api/admin/export/tasks?${exportParams.toString()}`} className="btn-secondary">
           Export CSV
         </a>

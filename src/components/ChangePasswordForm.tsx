@@ -43,7 +43,7 @@ export default function ChangePasswordForm() {
 
   return (
     <div className="card space-y-4">
-      <h2 className="font-semibold">Change password</h2>
+      <h2 className="font-display font-semibold text-ink">Change password</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="mb-1 block text-sm font-medium">Current password</label>

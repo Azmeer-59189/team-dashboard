@@ -21,6 +21,7 @@ export default function FilterBar({
     const params = new URLSearchParams(searchParams.toString());
     if (value) params.set(key, value);
     else params.delete(key);
+    if (key === "department") params.delete("member");
     router.push(`${pathname}?${params.toString()}`);
   }
 
@@ -28,7 +29,7 @@ export default function FilterBar({
     <div className="card flex flex-wrap items-end gap-4">
       {!hideDepartment && (
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">Department</label>
+          <label className="mb-1 block text-xs font-medium text-muted">Department</label>
           <select
             className="input"
             defaultValue={searchParams.get("department") ?? ""}
@@ -45,13 +46,13 @@ export default function FilterBar({
       )}
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-500">Member</label>
+        <label className="mb-1 block text-xs font-medium text-muted">Member</label>
         <select
           className="input"
           defaultValue={searchParams.get("member") ?? ""}
           onChange={(e) => setParam("member", e.target.value)}
         >
-          <option value="">All members</option>
+          <option value="">All members and leads</option>
           {members.map((m) => (
             <option key={m.id} value={m.id}>
               {m.label}
@@ -61,7 +62,7 @@ export default function FilterBar({
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-500">Status</label>
+        <label className="mb-1 block text-xs font-medium text-muted">Status</label>
         <select
           className="input"
           defaultValue={searchParams.get("status") ?? ""}
@@ -75,7 +76,7 @@ export default function FilterBar({
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-500">From</label>
+        <label className="mb-1 block text-xs font-medium text-muted">From</label>
         <input
           type="date"
           className="input"
@@ -85,7 +86,7 @@ export default function FilterBar({
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-500">To</label>
+        <label className="mb-1 block text-xs font-medium text-muted">To</label>
         <input
           type="date"
           className="input"

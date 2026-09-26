@@ -18,8 +18,8 @@ export default async function MyTasksPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold">My Tasks</h1>
-        <p className="text-sm text-gray-500">Log your own daily work here.</p>
+        <h1 className="font-display text-xl font-semibold text-ink">My Tasks</h1>
+        <p className="text-sm text-muted">Log your own daily work here.</p>
       </div>
 
       <TaskForm />

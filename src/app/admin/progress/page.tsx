@@ -33,15 +33,15 @@ export default async function ProgressPage({
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold">KPI Progress</h1>
-        <p className="text-sm text-gray-500">Based on tasks marked "done" in the current week/month.</p>
+        <h1 className="font-display text-xl font-semibold text-ink">KPI Progress</h1>
+        <p className="text-sm text-muted">Based on tasks marked "done" in the current week/month.</p>
       </div>
 
       {!scope.isLead && (
         <div className="card flex items-end gap-4">
           <form method="get" className="flex items-end gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-500">Department</label>
+              <label className="mb-1 block text-xs font-medium text-muted">Department</label>
               <select name="department" defaultValue={searchParams.department ?? ""} className="input">
                 <option value="">All departments</option>
                 {departments.map((d) => (
@@ -62,8 +62,8 @@ export default async function ProgressPage({
         {rows.map(({ member, goals }) => (
           <div key={member.id} className="card space-y-3">
             <div>
-              <p className="font-semibold">{member.fullName}</p>
-              <p className="text-xs text-gray-500">{member.department?.name ?? "No department"}</p>
+              <p className="font-display font-semibold text-ink">{member.fullName}</p>
+              <p className="text-xs text-muted">{member.department?.name ?? "No department"}</p>
             </div>
             {goals.length === 0 ? (
               <p className="text-sm text-gray-400">No KPI set for this member.</p>
@@ -81,7 +81,7 @@ export default async function ProgressPage({
             )}
           </div>
         ))}
-        {rows.length === 0 && <p className="text-sm text-gray-500">No members found.</p>}
+        {rows.length === 0 && <p className="text-sm text-muted">No members found.</p>}
       </div>
     </div>
   );

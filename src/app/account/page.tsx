@@ -11,8 +11,8 @@ export default async function AccountPage() {
   return (
     <div className="mx-auto max-w-md space-y-6 p-6">
       <div>
-        <h1 className="text-xl font-semibold">My Account</h1>
-        <p className="text-sm text-gray-500">{session.user.name} · {session.user.email}</p>
+        <h1 className="font-display text-xl font-semibold text-ink">My Account</h1>
+        <p className="text-sm text-muted">{session.user.name} · {session.user.email}</p>
       </div>
       <ChangePasswordForm />
     </div>

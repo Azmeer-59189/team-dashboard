@@ -124,8 +124,8 @@ export default function GoalsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-xl font-semibold">KPI Goals</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="font-display text-xl font-semibold text-ink">KPI Goals</h1>
+        <p className="text-sm text-muted">
           Set how many "done" tasks each department (or specific member) should complete per week/month.
           An individual target overrides the department default for that person. Optionally link a KPI to
           an Objective so it rolls up into that objective's progress.
@@ -135,7 +135,7 @@ export default function GoalsPage() {
 
       {/* Department goals */}
       <div className="space-y-3">
-        <h2 className="font-semibold">Department defaults</h2>
+        <h2 className="font-display font-semibold text-ink">Department defaults</h2>
         <form onSubmit={handleDeptSubmit} className="card grid grid-cols-1 gap-4 sm:grid-cols-5">
           <div>
             <label className="mb-1 block text-sm font-medium">Department</label>
@@ -202,7 +202,7 @@ export default function GoalsPage() {
         <div className="card">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-gray-500">
+              <tr className="border-b border-hairline text-muted">
                 <th className="py-2">Department</th>
                 <th className="py-2">Period</th>
                 <th className="py-2">Target</th>
@@ -212,11 +212,11 @@ export default function GoalsPage() {
             </thead>
             <tbody>
               {deptGoals.map((g) => (
-                <tr key={g.id} className="border-b border-gray-100">
+                <tr key={g.id} className="border-b border-hairline/60">
                   <td className="py-2">{g.departmentName}</td>
                   <td className="py-2 capitalize">{g.period.toLowerCase()}</td>
                   <td className="py-2">{g.targetCount}</td>
-                  <td className="py-2 text-gray-500">{g.objectiveTitle ?? "—"}</td>
+                  <td className="py-2 text-muted">{g.objectiveTitle ?? "—"}</td>
                   <td className="py-2 text-right">
                     <button onClick={() => handleDelete(g.id)} className="text-xs text-red-600 hover:underline">
                       Delete
@@ -226,7 +226,7 @@ export default function GoalsPage() {
               ))}
               {deptGoals.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-6 text-center text-gray-500">
+                  <td colSpan={5} className="py-6 text-center text-muted">
                     No department goals yet.
                   </td>
                 </tr>
@@ -238,7 +238,7 @@ export default function GoalsPage() {
 
       {/* Individual overrides */}
       <div className="space-y-3">
-        <h2 className="font-semibold">Individual overrides</h2>
+        <h2 className="font-display font-semibold text-ink">Individual overrides</h2>
         <form onSubmit={handleMemberSubmit} className="card grid grid-cols-1 gap-4 sm:grid-cols-5">
           <div>
             <label className="mb-1 block text-sm font-medium">Member</label>
@@ -304,7 +304,7 @@ export default function GoalsPage() {
         <div className="card">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-gray-500">
+              <tr className="border-b border-hairline text-muted">
                 <th className="py-2">Member</th>
                 <th className="py-2">Department</th>
                 <th className="py-2">Period</th>
@@ -315,12 +315,12 @@ export default function GoalsPage() {
             </thead>
             <tbody>
               {memberGoals.map((g) => (
-                <tr key={g.id} className="border-b border-gray-100">
+                <tr key={g.id} className="border-b border-hairline/60">
                   <td className="py-2">{g.memberName}</td>
                   <td className="py-2">{g.departmentName ?? "—"}</td>
                   <td className="py-2 capitalize">{g.period.toLowerCase()}</td>
                   <td className="py-2">{g.targetCount}</td>
-                  <td className="py-2 text-gray-500">{g.objectiveTitle ?? "—"}</td>
+                  <td className="py-2 text-muted">{g.objectiveTitle ?? "—"}</td>
                   <td className="py-2 text-right">
                     <button onClick={() => handleDelete(g.id)} className="text-xs text-red-600 hover:underline">
                       Delete
@@ -330,7 +330,7 @@ export default function GoalsPage() {
               ))}
               {memberGoals.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-6 text-center text-gray-500">
+                  <td colSpan={6} className="py-6 text-center text-muted">
                     No individual overrides yet.
                   </td>
                 </tr>

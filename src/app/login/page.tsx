@@ -49,9 +49,9 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-4">
         {DEMO_MODE && (
-          <div className="card border-brand-200 bg-brand-50">
-            <p className="mb-2 text-sm font-semibold text-brand-700">This is a public demo</p>
-            <p className="mb-3 text-xs text-gray-600">
+          <div className="card border-brand-100 bg-brand-50">
+            <p className="mb-2 text-sm font-semibold text-brand-600">This is a public demo</p>
+            <p className="mb-3 text-xs text-muted">
               Sample data only, no real organization data. Click a role to fill in demo credentials:
             </p>
             <div className="flex gap-2">
@@ -69,8 +69,8 @@ export default function LoginPage() {
         )}
 
         <div className="card">
-          <h1 className="mb-1 text-xl font-semibold">Team Dashboard</h1>
-          <p className="mb-6 text-sm text-gray-500">
+          <h1 className="mb-1 font-display text-xl font-semibold text-ink">Team Dashboard</h1>
+          <p className="mb-6 text-sm text-muted">
             Sign in with the account your admin created for you.
           </p>
 

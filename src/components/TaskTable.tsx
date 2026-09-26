@@ -54,7 +54,7 @@ export default function TaskTable({
   }
 
   if (tasks.length === 0) {
-    return <p className="py-8 text-center text-sm text-gray-500">No tasks found.</p>;
+    return <p className="py-8 text-center text-sm text-muted">No tasks found.</p>;
   }
 
   return (
@@ -62,7 +62,7 @@ export default function TaskTable({
       {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
       <table className="w-full text-left text-sm">
         <thead>
-          <tr className="border-b border-gray-200 text-gray-500">
+          <tr className="border-b border-gray-200 text-muted">
             <th className="py-2 pr-4">Date</th>
             {showOwner && <th className="py-2 pr-4">Member</th>}
             {showOwner && <th className="py-2 pr-4">Department</th>}
@@ -74,7 +74,7 @@ export default function TaskTable({
         </thead>
         <tbody>
           {tasks.map((t) => (
-            <tr key={t.id} className="border-b border-gray-100">
+            <tr key={t.id} className="border-b border-hairline/60">
               <td className="py-2 pr-4 whitespace-nowrap">{t.task_date}</td>
               {showOwner && <td className="py-2 pr-4">{t.profiles?.full_name ?? "—"}</td>}
               {showOwner && <td className="py-2 pr-4">{t.departments?.name ?? "—"}</td>}

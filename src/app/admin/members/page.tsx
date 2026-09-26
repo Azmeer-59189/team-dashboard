@@ -162,7 +162,7 @@ export default function MembersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Members</h1>
+      <h1 className="font-display text-xl font-semibold text-ink">Members</h1>
 
       <form onSubmit={handleAdd} className="card grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <div>
@@ -235,8 +235,8 @@ export default function MembersPage() {
 
       <div className="card space-y-3">
         <div>
-          <h2 className="font-semibold">Bulk import (CSV)</h2>
-          <p className="text-xs text-gray-500">
+          <h2 className="font-display font-semibold text-ink">Bulk import (CSV)</h2>
+          <p className="text-xs text-muted">
             Columns: <code>full_name,email,password,department,role</code> (department and role are optional —
             {isLead ? " everyone is added to your department as a member regardless of these columns." : " role defaults to member; department must match an existing department name exactly."}
           </p>
@@ -249,12 +249,12 @@ export default function MembersPage() {
           disabled={bulkLoading}
           className="text-sm"
         />
-        {bulkLoading && <p className="text-sm text-gray-500">Importing...</p>}
+        {bulkLoading && <p className="text-sm text-muted">Importing...</p>}
         {bulkResults && (
-          <div className="max-h-64 overflow-y-auto rounded-lg border border-gray-200">
+          <div className="max-h-64 overflow-y-auto rounded-lg border border-hairline">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-gray-200 bg-gray-50 text-gray-500">
+                <tr className="border-b border-hairline bg-gray-50 text-muted">
                   <th className="px-2 py-1">Row</th>
                   <th className="px-2 py-1">Email</th>
                   <th className="px-2 py-1">Result</th>
@@ -262,7 +262,7 @@ export default function MembersPage() {
               </thead>
               <tbody>
                 {bulkResults.map((r) => (
-                  <tr key={r.row} className="border-b border-gray-100">
+                  <tr key={r.row} className="border-b border-hairline/60">
                     <td className="px-2 py-1">{r.row}</td>
                     <td className="px-2 py-1">{r.email}</td>
                     <td className={`px-2 py-1 ${r.ok ? "text-green-600" : "text-red-600"}`}>
@@ -279,7 +279,7 @@ export default function MembersPage() {
       <div className="card">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-gray-500">
+            <tr className="border-b border-hairline text-muted">
               <th className="py-2">Name</th>
               <th className="py-2">Email</th>
               <th className="py-2">Role</th>
@@ -289,7 +289,7 @@ export default function MembersPage() {
           </thead>
           <tbody>
             {members.map((m) => (
-              <tr key={m.id} className="border-b border-gray-100">
+              <tr key={m.id} className="border-b border-hairline/60">
                 <td className="py-2">
                   <Link href={`/admin/members/${m.id}`} className="text-brand-600 hover:underline">
                     {m.full_name}
@@ -316,7 +316,7 @@ export default function MembersPage() {
             ))}
             {members.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-6 text-center text-gray-500">
+                <td colSpan={5} className="py-6 text-center text-muted">
                   No members yet.
                 </td>
               </tr>
