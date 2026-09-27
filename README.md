@@ -144,6 +144,17 @@ Your real deployment stays private with real organization data. For a portfolio 
 4. Share the demo project's URL in your portfolio/GitHub. The login page will show one-click buttons to fill in demo admin/lead/member credentials — visitors never need real credentials, and never touch your organization's actual data.
 5. Since visitors can edit/delete things in the demo, log in as the demo admin any time and click **"Reset Demo Data"** in the sidebar to wipe it back to the original sample state.
 
+## Job titles, task metadata & composite scoring (new)
+
+Inspired by a more mature spreadsheet-based KPI system the organization already used, six additions:
+
+1. **Job titles** — optional, purely informational field on each member (e.g. "Web Development Lead"), separate from their Admin/Lead/Member permission role. Shown on the Members list and their profile page. Doesn't affect access control.
+2. **Richer task metadata** — tasks can optionally carry a Category, Chapter/region, Campaign, and Priority (low/medium/high), under "More details" when submitting a task. Category/Chapter/Campaign have autocomplete suggestions drawn from your own past entries, to keep free-text fields reasonably consistent without a separate management page. All of this is included in the CSV export.
+3. **Designer fields** — a "This is a design task" checkbox on the task form reveals Delivered Date and Revision Rounds, for teams that need to track on-time delivery and revision cycles.
+4. **Manual/manager scores** — on a member's profile page, an admin or lead can log a 0–10 score for a competency (e.g. "Teamwork", "Communication") for a given month, with optional notes. This captures judgement calls that no task count can measure.
+5. **Composite KPI score** — each member's profile, and the new **Composite Scores** page, show Core (their automatic, count-based KPIs, weighted 65%) + Behavioural (average of their manual scores, weighted 35%) = one Overall /100 score for the current month. If only one half has data, it counts for the whole score rather than being scored as zero. KPIs on the Goals page now have a Category (Core/Behavioural) and Weight, feeding this calculation.
+6. **Annual KPI tracking** — KPI Goals can now be set as Annual, not just Weekly/Monthly, for teams that track a yearly quota.
+
 ## Objectives (new)
 
 Sits above KPI Goals to give them a strategic "why". Each department can have its own Objectives, tracked monthly, with progress from **two combined sources**:

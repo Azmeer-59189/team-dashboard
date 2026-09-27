@@ -66,8 +66,9 @@ export default async function MemberDashboard() {
         <p className="text-sm text-muted">Log today's work below.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <StatCard label="Done this month" value={doneThisMonth} trend={heroTrend} />
+      <StatCard hero label="Tasks done this month" value={doneThisMonth} trend={heroTrend} />
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
         <StatCard label="Total tasks logged" value={totalCount} />
         <StatCard label="Tasks done (all time)" value={doneCount} />
       </div>
@@ -78,7 +79,7 @@ export default async function MemberDashboard() {
           {goals.map((g) => (
             <ProgressBar
               key={g.period}
-              label={g.period === "WEEKLY" ? "This week" : "This month"}
+              label={g.period === "WEEKLY" ? "This week" : g.period === "ANNUAL" ? "This year" : "This month"}
               progress={g.progress}
               target={g.target}
             />

@@ -9,6 +9,7 @@ const ACTION_LABELS: Record<string, string> = {
   "member.delete": "Removed member",
   "member.bulk_import": "Bulk imported members",
   "member.password_reset": "Reset member password",
+  "manual_score.create": "Added manual score",
 };
 
 export default async function AuditLogPage() {

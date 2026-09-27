@@ -8,12 +8,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (session.user.role === "MEMBER") redirect("/member");
 
   return (
-    <div className="flex min-h-screen bg-canvas">
+    <div className="flex">
       <Sidebar
         role={session.user.role === "ADMIN" ? "admin" : "lead"}
         name={session.user.name ?? session.user.email ?? ""}
       />
-      <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
+      <main className="min-h-screen flex-1 overflow-y-auto bg-canvas p-4 sm:p-6 lg:p-8">
+        <div className="mx-auto max-w-7xl">{children}</div>
+      </main>
     </div>
   );
 }

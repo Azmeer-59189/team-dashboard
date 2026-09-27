@@ -35,6 +35,8 @@ export async function GET() {
       departmentName: g.department?.name,
       period: g.period,
       targetCount: g.targetCount,
+      weight: g.weight,
+      category: g.category,
       objectiveId: g.objectiveId,
       objectiveTitle: (g as any).objective?.title ?? null,
     })),
@@ -45,6 +47,8 @@ export async function GET() {
       departmentName: g.user?.department?.name ?? null,
       period: g.period,
       targetCount: g.targetCount,
+      weight: g.weight,
+      category: g.category,
       objectiveId: g.objectiveId,
       objectiveTitle: (g as any).objective?.title ?? null,
     })),
@@ -57,18 +61,24 @@ export async function POST(request: Request) {
   const scope = getScope(session);
   if (!canManage(scope)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { scope: goalScope, departmentId, userId, period, targetCount, objectiveId } = await request.json();
+  const { scope: goalScope, departmentId, userId, period, targetCount, objectiveId, weight, category } =
+    await request.json();
 
   if (!["department", "member"].includes(goalScope)) {
     return NextResponse.json({ error: "Invalid scope" }, { status: 400 });
   }
-  if (!["WEEKLY", "MONTHLY"].includes(period)) {
+  if (!["WEEKLY", "MONTHLY", "ANNUAL"].includes(period)) {
     return NextResponse.json({ error: "Invalid period" }, { status: 400 });
   }
   const target = Number(targetCount);
   if (!Number.isFinite(target) || target <= 0) {
     return NextResponse.json({ error: "Target must be a positive number" }, { status: 400 });
   }
+  const goalWeight = weight !== undefined && weight !== null && weight !== "" ? Number(weight) : 1;
+  if (!Number.isFinite(goalWeight) || goalWeight <= 0) {
+    return NextResponse.json({ error: "Weight must be a positive number" }, { status: 400 });
+  }
+  const goalCategory = category === "BEHAVIOURAL" ? "BEHAVIOURAL" : "CORE";
 
   try {
     if (goalScope === "department") {
@@ -78,8 +88,8 @@ export async function POST(request: Request) {
       }
       const goal = await prisma.goal.upsert({
         where: { departmentId_period: { departmentId, period } },
-        create: { departmentId, period, targetCount: target, objectiveId: objectiveId || null },
-        update: { targetCount: target, objectiveId: objectiveId || null },
+        create: { departmentId, period, targetCount: target, objectiveId: objectiveId || null, weight: goalWeight, category: goalCategory },
+        update: { targetCount: target, objectiveId: objectiveId || null, weight: goalWeight, category: goalCategory },
       });
       return NextResponse.json({ goal });
     } else {
@@ -92,8 +102,8 @@ export async function POST(request: Request) {
       }
       const goal = await prisma.goal.upsert({
         where: { userId_period: { userId, period } },
-        create: { userId, period, targetCount: target, objectiveId: objectiveId || null },
-        update: { targetCount: target, objectiveId: objectiveId || null },
+        create: { userId, period, targetCount: target, objectiveId: objectiveId || null, weight: goalWeight, category: goalCategory },
+        update: { targetCount: target, objectiveId: objectiveId || null, weight: goalWeight, category: goalCategory },
       });
       return NextResponse.json({ goal });
     }

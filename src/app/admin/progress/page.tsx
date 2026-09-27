@@ -71,7 +71,7 @@ export default async function ProgressPage({
               goals.map((g) => (
                 <ProgressBar
                   key={g.period}
-                  label={`${g.period === "WEEKLY" ? "This week" : "This month"}${
+                  label={`${g.period === "WEEKLY" ? "This week" : g.period === "ANNUAL" ? "This year" : "This month"}${
                     g.source === "member" ? " (custom)" : ""
                   }`}
                   progress={g.progress}

@@ -10,6 +10,7 @@ type Member = {
   full_name: string;
   email: string;
   role: string;
+  job_title?: string | null;
   department_id: string | null;
   departments?: { name: string } | null;
 };
@@ -30,6 +31,7 @@ export default function MembersPage() {
     password: "",
     role: "member",
     department_id: "",
+    job_title: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +85,7 @@ export default function MembersPage() {
       password: "",
       role: isLead ? "member" : "member",
       department_id: isLead ? leadDepartmentId : "",
+      job_title: "",
     });
     load();
   }
@@ -146,6 +149,7 @@ export default function MembersPage() {
       password: r.password,
       department: r.department,
       role: r.role,
+      job_title: r.job_title,
     }));
 
     const res = await fetch("/api/admin/members/bulk", {
@@ -194,6 +198,15 @@ export default function MembersPage() {
             onChange={(e) => setForm({ ...form, password: e.target.value })}
           />
         </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">Job title (optional)</label>
+          <input
+            className="input"
+            value={form.job_title}
+            onChange={(e) => setForm({ ...form, job_title: e.target.value })}
+            placeholder="e.g. Coordinator - Europe"
+          />
+        </div>
         {!isLead && (
           <div>
             <label className="mb-1 block text-sm font-medium">Role</label>
@@ -237,7 +250,7 @@ export default function MembersPage() {
         <div>
           <h2 className="font-display font-semibold text-ink">Bulk import (CSV)</h2>
           <p className="text-xs text-muted">
-            Columns: <code>full_name,email,password,department,role</code> (department and role are optional —
+            Columns: <code>full_name,email,password,department,role,job_title</code> (department, role, and job_title are optional —
             {isLead ? " everyone is added to your department as a member regardless of these columns." : " role defaults to member; department must match an existing department name exactly."}
           </p>
         </div>
@@ -281,6 +294,7 @@ export default function MembersPage() {
           <thead>
             <tr className="border-b border-hairline text-muted">
               <th className="py-2">Name</th>
+              <th className="py-2">Job Title</th>
               <th className="py-2">Email</th>
               <th className="py-2">Role</th>
               <th className="py-2">Department</th>
@@ -295,6 +309,7 @@ export default function MembersPage() {
                     {m.full_name}
                   </Link>
                 </td>
+                <td className="py-2 text-muted">{m.job_title ?? "—"}</td>
                 <td className="py-2">{m.email}</td>
                 <td className="py-2 capitalize">{m.role}</td>
                 <td className="py-2">{m.departments?.name ?? "—"}</td>
@@ -316,7 +331,7 @@ export default function MembersPage() {
             ))}
             {members.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-6 text-center text-muted">
+                <td colSpan={6} className="py-6 text-center text-muted">
                   No members yet.
                 </td>
               </tr>

@@ -1,6 +1,8 @@
 const MAX_CONTENT_LENGTH = 5000;
+const MAX_SHORT_FIELD_LENGTH = 100;
 const VALID_TYPES = ["text", "link"];
 const VALID_STATUSES = ["pending", "in-progress", "done"];
+const VALID_PRIORITIES = ["low", "medium", "high"];
 
 export function isValidUrl(value: string) {
   try {
@@ -24,6 +26,13 @@ export function validateTaskFields(fields: {
   content?: string;
   task_date?: string;
   status?: string;
+  category?: string | null;
+  chapter?: string | null;
+  campaign?: string | null;
+  priority?: string | null;
+  due_date?: string | null;
+  delivered_date?: string | null;
+  revision_rounds?: number | string | null;
 }): string | null {
   if (fields.type !== undefined && !VALID_TYPES.includes(fields.type)) {
     return "Task type must be 'text' or 'link'";
@@ -41,6 +50,24 @@ export function validateTaskFields(fields: {
   }
   if (fields.task_date !== undefined && !isValidDate(fields.task_date)) {
     return "Task date is not a valid date";
+  }
+  for (const [label, value] of [
+    ["Chapter", fields.chapter],
+    ["Category", fields.category],
+    ["Campaign", fields.campaign],
+  ] as const) {
+    if (value && value.length > MAX_SHORT_FIELD_LENGTH) {
+      return `${label} must be under ${MAX_SHORT_FIELD_LENGTH} characters`;
+    }
+  }
+  if (fields.priority !== undefined && fields.priority !== null && fields.priority !== "" && !VALID_PRIORITIES.includes(fields.priority)) {
+    return "Priority must be low, medium, or high";
+  }
+  if (fields.due_date && !isValidDate(fields.due_date)) return "Due date is not a valid date";
+  if (fields.delivered_date && !isValidDate(fields.delivered_date)) return "Delivered date is not a valid date";
+  if (fields.revision_rounds !== undefined && fields.revision_rounds !== null && fields.revision_rounds !== "") {
+    const n = Number(fields.revision_rounds);
+    if (!Number.isInteger(n) || n < 0) return "Revision rounds must be a whole number, 0 or more";
   }
   return null;
 }

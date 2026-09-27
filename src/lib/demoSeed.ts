@@ -55,6 +55,7 @@ function randomStatus(i: number) {
 
 export async function seedDemoData() {
   // wipe in FK-safe order (children before parents)
+  await prisma.manualScore.deleteMany();
   await prisma.goal.deleteMany();
   await prisma.task.deleteMany();
   await prisma.auditLog.deleteMany();
@@ -73,6 +74,7 @@ export async function seedDemoData() {
       email: "demo-admin@example.com",
       passwordHash: adminHash,
       role: "ADMIN",
+      jobTitle: "Operations Director",
     },
   });
 
@@ -84,6 +86,7 @@ export async function seedDemoData() {
       passwordHash: leadHash,
       role: "LEAD",
       departmentId: deptByName["Design"].id,
+      jobTitle: "Design Lead",
     },
   });
 
@@ -92,6 +95,13 @@ export async function seedDemoData() {
     Development: ["Marcus Reed", "Priya Nair"],
     Content: ["Jordan Lee"],
     Grants: ["Sofia Marino"],
+  };
+  const jobTitles: Record<string, string> = {
+    "Ava Chen": "Designer",
+    "Marcus Reed": "Web Developer",
+    "Priya Nair": "Web Developer",
+    "Jordan Lee": "Content Writer",
+    "Sofia Marino": "Grants Coordinator",
   };
 
   const memberHash = await bcrypt.hash(DEMO_PASSWORD, 10);
@@ -106,6 +116,7 @@ export async function seedDemoData() {
           passwordHash: memberHash,
           role: "MEMBER",
           departmentId: deptByName[deptName].id,
+          jobTitle: jobTitles[name] ?? null,
         },
       });
       members.push({ ...member, deptName });
@@ -126,6 +137,10 @@ export async function seedDemoData() {
         ? bank.link[i % bank.link.length]
         : bank.text[i % bank.text.length];
 
+      const priorities = ["LOW", "MEDIUM", "HIGH"] as const;
+      const dueDate = new Date(date);
+      dueDate.setUTCDate(dueDate.getUTCDate() + 3);
+
       await prisma.task.create({
         data: {
           userId: member.id,
@@ -134,6 +149,13 @@ export async function seedDemoData() {
           content,
           taskDate: date,
           status: randomStatus(i) as any,
+          category: i % 3 === 0 ? "Social Media" : i % 3 === 1 ? "Blog" : "Email",
+          chapter: i % 2 === 0 ? "Europe" : "USA",
+          campaign: i % 5 === 0 ? "Winter Appeal" : null,
+          priority: priorities[i % 3] as any,
+          dueDate,
+          deliveredDate: member.deptName === "Design" && randomStatus(i) === "DONE" ? date : null,
+          revisionRounds: member.deptName === "Design" ? i % 3 : null,
         },
       });
     }
@@ -141,13 +163,34 @@ export async function seedDemoData() {
 
   // sample KPI goals so Progress/Goals pages have something to show
   const designGoal = await prisma.goal.create({
-    data: { departmentId: deptByName["Design"].id, period: "MONTHLY", targetCount: 12 },
+    data: { departmentId: deptByName["Design"].id, period: "MONTHLY", targetCount: 12, category: "CORE", weight: 1 },
   });
   await prisma.goal.create({
-    data: { departmentId: deptByName["Development"].id, period: "WEEKLY", targetCount: 4 },
+    data: { departmentId: deptByName["Development"].id, period: "WEEKLY", targetCount: 4, category: "CORE", weight: 1 },
   });
   await prisma.goal.create({
-    data: { userId: members.find((m) => m.deptName === "Content")!.id, period: "MONTHLY", targetCount: 10 },
+    data: {
+      userId: members.find((m) => m.deptName === "Content")!.id,
+      period: "MONTHLY",
+      targetCount: 10,
+      category: "CORE",
+      weight: 1,
+    },
+  });
+
+  // sample manual (behavioural) score for one member, feeding their composite score
+  const now = new Date();
+  const periodLabel = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+  await prisma.manualScore.create({
+    data: {
+      userId: members.find((m) => m.deptName === "Design")!.id,
+      scorerId: lead.id,
+      scorerName: lead.fullName,
+      competency: "Teamwork",
+      score: 8,
+      periodLabel,
+      notes: "Great collaboration on the winter campaign",
+    },
   });
 
   // sample Objective, linked to the Design KPI above, so the Objectives page has real data to show

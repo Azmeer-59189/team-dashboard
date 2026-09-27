@@ -12,6 +12,8 @@ type DeptGoal = {
   departmentName: string;
   period: string;
   targetCount: number;
+  weight: number;
+  category: string;
   objectiveTitle: string | null;
 };
 type MemberGoal = {
@@ -21,8 +23,13 @@ type MemberGoal = {
   departmentName: string | null;
   period: string;
   targetCount: number;
+  weight: number;
+  category: string;
   objectiveTitle: string | null;
 };
+
+const emptyDeptForm = { departmentId: "", period: "MONTHLY", targetCount: "", objectiveId: "", weight: "1", category: "CORE" };
+const emptyMemberForm = { userId: "", period: "MONTHLY", targetCount: "", objectiveId: "", weight: "1", category: "CORE" };
 
 export default function GoalsPage() {
   const { data: session } = useSession();
@@ -35,8 +42,8 @@ export default function GoalsPage() {
   const [deptGoals, setDeptGoals] = useState<DeptGoal[]>([]);
   const [memberGoals, setMemberGoals] = useState<MemberGoal[]>([]);
 
-  const [deptForm, setDeptForm] = useState({ departmentId: "", period: "MONTHLY", targetCount: "", objectiveId: "" });
-  const [memberForm, setMemberForm] = useState({ userId: "", period: "MONTHLY", targetCount: "", objectiveId: "" });
+  const [deptForm, setDeptForm] = useState(emptyDeptForm);
+  const [memberForm, setMemberForm] = useState(emptyMemberForm);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
@@ -94,8 +101,10 @@ export default function GoalsPage() {
       period: deptForm.period,
       targetCount: deptForm.targetCount,
       objectiveId: deptForm.objectiveId || null,
+      weight: deptForm.weight,
+      category: deptForm.category,
     });
-    setDeptForm({ departmentId: isLead ? leadDepartmentId : "", period: "MONTHLY", targetCount: "", objectiveId: "" });
+    setDeptForm({ ...emptyDeptForm, departmentId: isLead ? leadDepartmentId : "" });
   }
 
   async function handleMemberSubmit(e: React.FormEvent) {
@@ -105,8 +114,10 @@ export default function GoalsPage() {
       period: memberForm.period,
       targetCount: memberForm.targetCount,
       objectiveId: memberForm.objectiveId || null,
+      weight: memberForm.weight,
+      category: memberForm.category,
     });
-    setMemberForm({ userId: "", period: "MONTHLY", targetCount: "", objectiveId: "" });
+    setMemberForm(emptyMemberForm);
   }
 
   async function handleDelete(id: string) {
@@ -126,9 +137,9 @@ export default function GoalsPage() {
       <div>
         <h1 className="font-display text-xl font-semibold text-ink">KPI Goals</h1>
         <p className="text-sm text-muted">
-          Set how many "done" tasks each department (or specific member) should complete per week/month.
-          An individual target overrides the department default for that person. Optionally link a KPI to
-          an Objective so it rolls up into that objective's progress.
+          Set how many "done" tasks each department (or specific member) should complete per week/month/year.
+          An individual target overrides the department default for that person. Category (Core vs Behavioural)
+          and Weight feed into the Composite KPI Score on each member's profile.
         </p>
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
@@ -136,7 +147,7 @@ export default function GoalsPage() {
       {/* Department goals */}
       <div className="space-y-3">
         <h2 className="font-display font-semibold text-ink">Department defaults</h2>
-        <form onSubmit={handleDeptSubmit} className="card grid grid-cols-1 gap-4 sm:grid-cols-5">
+        <form onSubmit={handleDeptSubmit} className="card grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-7">
           <div>
             <label className="mb-1 block text-sm font-medium">Department</label>
             <select
@@ -163,6 +174,7 @@ export default function GoalsPage() {
             >
               <option value="WEEKLY">Weekly</option>
               <option value="MONTHLY">Monthly</option>
+              <option value="ANNUAL">Annual</option>
             </select>
           </div>
           <div>
@@ -174,6 +186,28 @@ export default function GoalsPage() {
               className="input"
               value={deptForm.targetCount}
               onChange={(e) => setDeptForm({ ...deptForm, targetCount: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Category</label>
+            <select
+              className="input"
+              value={deptForm.category}
+              onChange={(e) => setDeptForm({ ...deptForm, category: e.target.value })}
+            >
+              <option value="CORE">Core</option>
+              <option value="BEHAVIOURAL">Behavioural</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Weight</label>
+            <input
+              type="number"
+              min={0.1}
+              step={0.1}
+              className="input"
+              value={deptForm.weight}
+              onChange={(e) => setDeptForm({ ...deptForm, weight: e.target.value })}
             />
           </div>
           <div>
@@ -199,24 +233,28 @@ export default function GoalsPage() {
           </div>
         </form>
 
-        <div className="card">
+        <div className="card overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-hairline text-muted">
-                <th className="py-2">Department</th>
-                <th className="py-2">Period</th>
-                <th className="py-2">Target</th>
-                <th className="py-2">Objective</th>
+                <th className="py-2 pr-4">Department</th>
+                <th className="py-2 pr-4">Period</th>
+                <th className="py-2 pr-4">Target</th>
+                <th className="py-2 pr-4">Category</th>
+                <th className="py-2 pr-4">Weight</th>
+                <th className="py-2 pr-4">Objective</th>
                 <th className="py-2"></th>
               </tr>
             </thead>
             <tbody>
               {deptGoals.map((g) => (
                 <tr key={g.id} className="border-b border-hairline/60">
-                  <td className="py-2">{g.departmentName}</td>
-                  <td className="py-2 capitalize">{g.period.toLowerCase()}</td>
-                  <td className="py-2">{g.targetCount}</td>
-                  <td className="py-2 text-muted">{g.objectiveTitle ?? "—"}</td>
+                  <td className="py-2 pr-4">{g.departmentName}</td>
+                  <td className="py-2 pr-4 capitalize">{g.period.toLowerCase()}</td>
+                  <td className="py-2 pr-4">{g.targetCount}</td>
+                  <td className="py-2 pr-4 capitalize">{g.category?.toLowerCase() ?? "core"}</td>
+                  <td className="py-2 pr-4">{g.weight ?? 1}</td>
+                  <td className="py-2 pr-4 text-muted">{g.objectiveTitle ?? "—"}</td>
                   <td className="py-2 text-right">
                     <button onClick={() => handleDelete(g.id)} className="text-xs text-red-600 hover:underline">
                       Delete
@@ -226,7 +264,7 @@ export default function GoalsPage() {
               ))}
               {deptGoals.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-6 text-center text-muted">
+                  <td colSpan={7} className="py-6 text-center text-muted">
                     No department goals yet.
                   </td>
                 </tr>
@@ -239,7 +277,7 @@ export default function GoalsPage() {
       {/* Individual overrides */}
       <div className="space-y-3">
         <h2 className="font-display font-semibold text-ink">Individual overrides</h2>
-        <form onSubmit={handleMemberSubmit} className="card grid grid-cols-1 gap-4 sm:grid-cols-5">
+        <form onSubmit={handleMemberSubmit} className="card grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-7">
           <div>
             <label className="mb-1 block text-sm font-medium">Member</label>
             <select
@@ -265,6 +303,7 @@ export default function GoalsPage() {
             >
               <option value="WEEKLY">Weekly</option>
               <option value="MONTHLY">Monthly</option>
+              <option value="ANNUAL">Annual</option>
             </select>
           </div>
           <div>
@@ -276,6 +315,28 @@ export default function GoalsPage() {
               className="input"
               value={memberForm.targetCount}
               onChange={(e) => setMemberForm({ ...memberForm, targetCount: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Category</label>
+            <select
+              className="input"
+              value={memberForm.category}
+              onChange={(e) => setMemberForm({ ...memberForm, category: e.target.value })}
+            >
+              <option value="CORE">Core</option>
+              <option value="BEHAVIOURAL">Behavioural</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Weight</label>
+            <input
+              type="number"
+              min={0.1}
+              step={0.1}
+              className="input"
+              value={memberForm.weight}
+              onChange={(e) => setMemberForm({ ...memberForm, weight: e.target.value })}
             />
           </div>
           <div>
@@ -301,26 +362,30 @@ export default function GoalsPage() {
           </div>
         </form>
 
-        <div className="card">
+        <div className="card overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-hairline text-muted">
-                <th className="py-2">Member</th>
-                <th className="py-2">Department</th>
-                <th className="py-2">Period</th>
-                <th className="py-2">Target</th>
-                <th className="py-2">Objective</th>
+                <th className="py-2 pr-4">Member</th>
+                <th className="py-2 pr-4">Department</th>
+                <th className="py-2 pr-4">Period</th>
+                <th className="py-2 pr-4">Target</th>
+                <th className="py-2 pr-4">Category</th>
+                <th className="py-2 pr-4">Weight</th>
+                <th className="py-2 pr-4">Objective</th>
                 <th className="py-2"></th>
               </tr>
             </thead>
             <tbody>
               {memberGoals.map((g) => (
                 <tr key={g.id} className="border-b border-hairline/60">
-                  <td className="py-2">{g.memberName}</td>
-                  <td className="py-2">{g.departmentName ?? "—"}</td>
-                  <td className="py-2 capitalize">{g.period.toLowerCase()}</td>
-                  <td className="py-2">{g.targetCount}</td>
-                  <td className="py-2 text-muted">{g.objectiveTitle ?? "—"}</td>
+                  <td className="py-2 pr-4">{g.memberName}</td>
+                  <td className="py-2 pr-4">{g.departmentName ?? "—"}</td>
+                  <td className="py-2 pr-4 capitalize">{g.period.toLowerCase()}</td>
+                  <td className="py-2 pr-4">{g.targetCount}</td>
+                  <td className="py-2 pr-4 capitalize">{g.category?.toLowerCase() ?? "core"}</td>
+                  <td className="py-2 pr-4">{g.weight ?? 1}</td>
+                  <td className="py-2 pr-4 text-muted">{g.objectiveTitle ?? "—"}</td>
                   <td className="py-2 text-right">
                     <button onClick={() => handleDelete(g.id)} className="text-xs text-red-600 hover:underline">
                       Delete
@@ -330,7 +395,7 @@ export default function GoalsPage() {
               ))}
               {memberGoals.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-6 text-center text-muted">
+                  <td colSpan={8} className="py-6 text-center text-muted">
                     No individual overrides yet.
                   </td>
                 </tr>

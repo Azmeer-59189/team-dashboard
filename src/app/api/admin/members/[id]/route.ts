@@ -15,6 +15,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if ("full_name" in updates) patch.fullName = updates.full_name;
   if ("role" in updates) patch.role = String(updates.role).toUpperCase();
   if ("department_id" in updates) patch.departmentId = updates.department_id || null;
+  if ("job_title" in updates) patch.jobTitle = updates.job_title || null;
 
   try {
     await prisma.user.update({ where: { id: params.id }, data: patch });

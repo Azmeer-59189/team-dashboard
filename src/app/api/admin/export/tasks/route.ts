@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getScope, canManage } from "@/lib/scope";
-import { statusToDb, typeFromDb, statusFromDb } from "@/lib/format";
+import { statusToDb, typeFromDb, statusFromDb, priorityFromDb } from "@/lib/format";
 
 function csvEscape(value: string) {
   if (/[",\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
@@ -42,7 +42,22 @@ export async function GET(request: Request) {
     take: 5000,
   });
 
-  const header = ["Date", "Member", "Email", "Department", "Type", "Status", "Content"];
+  const header = [
+    "Date",
+    "Member",
+    "Email",
+    "Department",
+    "Type",
+    "Status",
+    "Content",
+    "Category",
+    "Chapter",
+    "Campaign",
+    "Priority",
+    "Due Date",
+    "Delivered Date",
+    "Revision Rounds",
+  ];
   const rows = tasks.map((t) => [
     t.taskDate.toISOString().slice(0, 10),
     t.user.fullName,
@@ -51,6 +66,13 @@ export async function GET(request: Request) {
     typeFromDb(t.type),
     statusFromDb(t.status),
     t.content,
+    t.category ?? "",
+    t.chapter ?? "",
+    t.campaign ?? "",
+    priorityFromDb(t.priority) ?? "",
+    t.dueDate ? t.dueDate.toISOString().slice(0, 10) : "",
+    t.deliveredDate ? t.deliveredDate.toISOString().slice(0, 10) : "",
+    t.revisionRounds ?? "",
   ]);
 
   const csv = [header, ...rows].map((r) => r.map((c) => csvEscape(String(c))).join(",")).join("\n");

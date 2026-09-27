@@ -42,15 +42,8 @@ export default async function AdminOverview({
   const [departments, members] = await Promise.all([
     prisma.department.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
     prisma.user.findMany({
-      where: {
-        role: { in: ["MEMBER", "LEAD"] },
-        ...(scope.isLead
-          ? { departmentId: scope.departmentId }
-          : searchParams.department
-          ? { departmentId: searchParams.department }
-          : {}),
-      },
-      select: { id: true, fullName: true },
+      where: { role: { in: ["MEMBER", "LEAD"] }, ...(scope.isLead ? { departmentId: scope.departmentId } : {}) },
+      select: { id: true, fullName: true, departmentId: true },
       orderBy: { fullName: "asc" },
     }),
   ]);
@@ -143,18 +136,20 @@ export default async function AdminOverview({
         </p>
       </div>
 
+      <StatCard
+        hero
+        label={scope.isLead ? "Your department's tasks done this month" : "Tasks done this month, org-wide"}
+        value={doneThisMonth}
+        trend={heroTrend}
+      />
+
       <FilterBar
         departments={departments.map((d) => ({ id: d.id, label: d.name }))}
-        members={members.map((m) => ({ id: m.id, label: m.fullName }))}
+        members={members.map((m) => ({ id: m.id, label: m.fullName, departmentId: m.departmentId }))}
         hideDepartment={scope.isLead}
       />
 
-      <div className={`grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 ${scope.isLead ? "2xl:grid-cols-6" : "2xl:grid-cols-7"}`}>
-        <StatCard
-          label={scope.isLead ? "Done this month · department" : "Done this month · org-wide"}
-          value={doneThisMonth}
-          trend={heroTrend}
-        />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard label="Members" value={memberCount} />
         {!scope.isLead && <StatCard label="Departments" value={deptCount} />}
         <StatCard label="Tasks (filtered)" value={total} />

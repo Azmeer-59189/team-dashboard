@@ -5,7 +5,7 @@ import { getSession } from "@/lib/session";
 import { getScope, canManage } from "@/lib/scope";
 import { logAudit } from "@/lib/audit";
 
-type Row = { full_name: string; email: string; password: string; department?: string; role?: string };
+type Row = { full_name: string; email: string; password: string; department?: string; role?: string; job_title?: string };
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -59,7 +59,14 @@ export async function POST(request: Request) {
     try {
       const passwordHash = await bcrypt.hash(row.password, 10);
       await prisma.user.create({
-        data: { fullName: row.full_name, email: row.email, passwordHash, role: dbRole as any, departmentId },
+        data: {
+          fullName: row.full_name,
+          email: row.email,
+          passwordHash,
+          role: dbRole as any,
+          departmentId,
+          jobTitle: row.job_title ? row.job_title.trim() : null,
+        },
       });
       results.push({ row: rowNum, email: row.email, ok: true });
       successCount++;

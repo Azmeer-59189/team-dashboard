@@ -29,6 +29,18 @@ enum TaskStatus {
 enum GoalPeriod {
   WEEKLY
   MONTHLY
+  ANNUAL
+}
+
+enum GoalCategory {
+  CORE
+  BEHAVIOURAL
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
 }
 
 model Department {
@@ -48,12 +60,14 @@ model User {
   email        String   @unique
   passwordHash String
   role         Role     @default(MEMBER)
+  jobTitle     String?
   departmentId String?
   createdAt    DateTime @default(now())
 
   department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  tasks      Task[]
-  goals      Goal[]
+  tasks       Task[]
+  goals       Goal[]
+  manualScores ManualScore[] @relation("ScoredUser")
 }
 
 // A department's monthly "why" - what its KPIs are actually in service of.
@@ -80,14 +94,16 @@ model Objective {
 // - departmentId set, userId null  -> default target for everyone in that department
 // - userId set, departmentId null  -> individual override for one member (wins over the department default for that period)
 model Goal {
-  id           String     @id @default(cuid())
+  id           String       @id @default(cuid())
   departmentId String?
   userId       String?
   objectiveId  String?
   period       GoalPeriod
   targetCount  Int
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  weight       Float        @default(1)
+  category     GoalCategory @default(CORE)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   department Department? @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   user       User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -95,6 +111,26 @@ model Goal {
 
   @@unique([departmentId, period])
   @@unique([userId, period])
+}
+
+// A manager's subjective 0-10 rating of a person on some competency
+// (teamwork, communication, judgement calls) that no task count can capture.
+// Feeds the "Behavioural" half of the composite score.
+model ManualScore {
+  id          String   @id @default(cuid())
+  userId      String
+  scorerId    String?
+  scorerName  String
+  competency  String
+  score       Float
+  periodLabel String // e.g. "2026-09" - the month this score applies to
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  user User @relation("ScoredUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([periodLabel])
 }
 
 // Snapshot-based audit trail. actorId/actorName are stored as plain values
@@ -111,16 +147,23 @@ model AuditLog {
 }
 
 model Task {
-  id           String     @id @default(cuid())
-  userId       String
-  departmentId String?
-  objectiveId  String?
-  type         TaskType
-  content      String     @db.Text
-  taskDate     DateTime   @db.Date
-  status       TaskStatus @default(PENDING)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id             String        @id @default(cuid())
+  userId         String
+  departmentId   String?
+  objectiveId    String?
+  type           TaskType
+  content        String        @db.Text
+  taskDate       DateTime      @db.Date
+  status         TaskStatus    @default(PENDING)
+  category       String?
+  chapter        String?
+  campaign       String?
+  priority       TaskPriority?
+  dueDate        DateTime?     @db.Date
+  deliveredDate  DateTime?     @db.Date
+  revisionRounds Int?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)

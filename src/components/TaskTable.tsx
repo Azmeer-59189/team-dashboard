@@ -10,8 +10,16 @@ export type TaskRow = {
   type: "text" | "link";
   task_date: string;
   status: string;
+  category?: string | null;
+  priority?: string | null;
   profiles?: { full_name: string } | null;
   departments?: { name: string } | null;
+};
+
+const PRIORITY_STYLES: Record<string, string> = {
+  high: "bg-danger/10 text-danger",
+  medium: "bg-amber-50 text-amber-700",
+  low: "bg-gray-100 text-gray-600",
 };
 
 export default function TaskTable({
@@ -62,12 +70,13 @@ export default function TaskTable({
       {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
       <table className="w-full text-left text-sm">
         <thead>
-          <tr className="border-b border-gray-200 text-muted">
+          <tr className="border-b border-hairline text-muted">
             <th className="py-2 pr-4">Date</th>
             {showOwner && <th className="py-2 pr-4">Member</th>}
             {showOwner && <th className="py-2 pr-4">Department</th>}
             <th className="py-2 pr-4">Type</th>
             <th className="py-2 pr-4">Task</th>
+            <th className="py-2 pr-4">Priority</th>
             <th className="py-2 pr-4">Status</th>
             {editable && <th className="py-2 pr-4"></th>}
           </tr>
@@ -90,6 +99,14 @@ export default function TaskTable({
                   </a>
                 ) : (
                   <span className="break-words">{t.content}</span>
+                )}
+                {t.category && <span className="ml-2 text-xs text-muted">({t.category})</span>}
+              </td>
+              <td className="py-2 pr-4">
+                {t.priority ? (
+                  <span className={`badge ${PRIORITY_STYLES[t.priority] ?? PRIORITY_STYLES.low}`}>{t.priority}</span>
+                ) : (
+                  <span className="text-muted">—</span>
                 )}
               </td>
               <td className="py-2 pr-4">

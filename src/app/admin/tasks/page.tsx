@@ -17,7 +17,7 @@ export default async function AdminTasksPage({
     prisma.department.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
     prisma.user.findMany({
       where: { role: { in: ["MEMBER", "LEAD"] }, ...(scope.isLead ? { departmentId: scope.departmentId } : {}) },
-      select: { id: true, fullName: true },
+      select: { id: true, fullName: true, departmentId: true },
       orderBy: { fullName: "asc" },
     }),
   ]);
@@ -59,7 +59,7 @@ export default async function AdminTasksPage({
 
       <FilterBar
         departments={departments.map((d) => ({ id: d.id, label: d.name }))}
-        members={members.map((m) => ({ id: m.id, label: m.fullName }))}
+        members={members.map((m) => ({ id: m.id, label: m.fullName, departmentId: m.departmentId }))}
         hideDepartment={scope.isLead}
       />
 

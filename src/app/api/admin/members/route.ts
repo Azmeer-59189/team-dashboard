@@ -27,13 +27,16 @@ export async function POST(request: Request) {
   const scope = getScope(session);
   if (!canManage(scope)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { full_name, email, password, role, department_id } = await request.json();
+  const { full_name, email, password, role, department_id, job_title } = await request.json();
 
   if (!full_name || !email || !password || !role) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
   if (typeof full_name !== "string" || full_name.trim().length === 0 || full_name.trim().length > 200) {
     return NextResponse.json({ error: "Name must be between 1 and 200 characters" }, { status: 400 });
+  }
+  if (job_title && (typeof job_title !== "string" || job_title.trim().length > 150)) {
+    return NextResponse.json({ error: "Job title must be under 150 characters" }, { status: 400 });
   }
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (typeof email !== "string" || !emailPattern.test(email.trim())) {
@@ -65,6 +68,7 @@ export async function POST(request: Request) {
         passwordHash,
         role: dbRole as any,
         departmentId: finalDepartmentId,
+        jobTitle: job_title ? job_title.trim() : null,
       },
     });
     await logAudit(
