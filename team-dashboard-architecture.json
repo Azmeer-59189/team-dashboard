@@ -1,0 +1,326 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Team Dashboard Architecture",
+    "output": "team-dashboard-architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "app-request-path",
+        "label": "App request path",
+        "focus": [
+          "browser",
+          "app-router",
+          "route-handlers",
+          "prisma",
+          "postgres"
+        ],
+        "note": "Trace page rendering and API requests into persistent data."
+      },
+      {
+        "id": "credentials-auth",
+        "label": "Credentials authentication",
+        "focus": [
+          "browser",
+          "app-router",
+          "middleware",
+          "nextauth",
+          "prisma",
+          "postgres"
+        ],
+        "note": "Follow credential verification and JWT-backed role sessions."
+      },
+      {
+        "id": "data-model",
+        "label": "Prisma data model",
+        "focus": [
+          "route-handlers",
+          "prisma",
+          "models",
+          "postgres"
+        ],
+        "note": "See the application models and their relational store."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "browser",
+      "type": "external",
+      "label": "User Browser",
+      "sublabel": "Admin · Lead · Member",
+      "pos": [
+        30,
+        310
+      ],
+      "size": [
+        145,
+        68
+      ]
+    },
+    {
+      "id": "app-router",
+      "type": "frontend",
+      "label": "Next.js App Router",
+      "sublabel": "Next.js 14 · React 18",
+      "tag": "pages + layouts",
+      "pos": [
+        235,
+        310
+      ],
+      "size": [
+        175,
+        68
+      ]
+    },
+    {
+      "id": "middleware",
+      "type": "security",
+      "label": "Route Middleware",
+      "sublabel": "JWT presence + role redirects",
+      "tag": "/admin · /member",
+      "pos": [
+        235,
+        130
+      ],
+      "size": [
+        175,
+        68
+      ]
+    },
+    {
+      "id": "nextauth",
+      "type": "security",
+      "label": "NextAuth Credentials",
+      "sublabel": "JWT session strategy",
+      "tag": "bcrypt password check",
+      "pos": [
+        475,
+        130
+      ],
+      "size": [
+        185,
+        68
+      ]
+    },
+    {
+      "id": "route-handlers",
+      "type": "backend",
+      "label": "Server Components + API",
+      "sublabel": "App Router handlers",
+      "tag": "session + role / scope checks",
+      "pos": [
+        475,
+        310
+      ],
+      "size": [
+        185,
+        68
+      ]
+    },
+    {
+      "id": "prisma",
+      "type": "backend",
+      "label": "Prisma Client",
+      "sublabel": "singleton · ORM queries",
+      "pos": [
+        725,
+        310
+      ],
+      "size": [
+        160,
+        68
+      ]
+    },
+    {
+      "id": "models",
+      "type": "database",
+      "label": "Prisma Data Models",
+      "sublabel": "6 domain models + ManualScore",
+      "tag": "ManualScore also defined",
+      "pos": [
+        725,
+        480
+      ],
+      "size": [
+        250,
+        82
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "cloud",
+      "label": "PostgreSQL on Neon",
+      "sublabel": "DATABASE_URL pooled app connection",
+      "tag": "DIRECT_URL for migrations",
+      "pos": [
+        1000,
+        310
+      ],
+      "size": [
+        190,
+        68
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Next.js application",
+      "wraps": [
+        "app-router",
+        "middleware",
+        "nextauth",
+        "route-handlers",
+        "prisma"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Neon hosted database",
+      "wraps": [
+        "postgres"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "browser-pages",
+      "from": "browser",
+      "to": "app-router",
+      "label": "HTTPS · page navigation",
+      "variant": "emphasis",
+      "labelAt": [
+        205,
+        392
+      ]
+    },
+    {
+      "id": "middleware-session",
+      "from": "middleware",
+      "to": "nextauth",
+      "label": "read JWT role",
+      "variant": "security",
+      "labelAt": [
+        443,
+        108
+      ]
+    },
+    {
+      "id": "app-middleware",
+      "from": "app-router",
+      "to": "middleware",
+      "label": "protected route gate",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "login-nextauth",
+      "from": "app-router",
+      "to": "nextauth",
+      "label": "sign in · credentials",
+      "variant": "security",
+      "labelAt": [
+        443,
+        212
+      ]
+    },
+    {
+      "id": "auth-user-query",
+      "from": "nextauth",
+      "to": "prisma",
+      "label": "find user by email",
+      "variant": "security",
+      "labelAt": [
+        693,
+        212
+      ]
+    },
+    {
+      "id": "server-session",
+      "from": "nextauth",
+      "to": "route-handlers",
+      "label": "getServerSession · JWT claims",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        568,
+        212
+      ]
+    },
+    {
+      "id": "handlers-prisma",
+      "from": "route-handlers",
+      "to": "prisma",
+      "label": "read · write · aggregate",
+      "labelAt": [
+        565,
+        392
+      ]
+    },
+    {
+      "id": "prisma-models",
+      "from": "prisma",
+      "to": "models",
+      "label": "model operations",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        816,
+        392
+      ]
+    },
+    {
+      "id": "models-postgres",
+      "from": "models",
+      "to": "postgres",
+      "label": "SQL over PostgreSQL",
+      "fromSide": "right",
+      "toSide": "bottom",
+      "labelAt": [
+        1095,
+        392
+      ]
+    },
+    {
+      "id": "prisma-db",
+      "from": "prisma",
+      "to": "postgres",
+      "label": "DATABASE_URL",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "App Router surface",
+      "items": [
+        "Pages and layouts: /login, /account, /member/*, /admin/*",
+        "API handlers: /api/auth/[...nextauth], /api/tasks, /api/admin/*, /api/objectives",
+        "Server pages and handlers call Prisma directly; client components use JSON APIs"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Credentials and access",
+      "items": [
+        "Credentials authorize looks up User by email and verifies passwordHash with bcrypt.compare",
+        "NextAuth stores id, role, and departmentId in a JWT and exposes them in the session",
+        "Middleware gates /admin and /member; API handlers independently check session and role / department scope"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Relational data",
+      "items": [
+        "Department has users, tasks, goals, and objectives; User owns tasks, goals, and manual scores",
+        "Goal can target a department or a user and can link to an Objective; Objective belongs to a Department",
+        "Task belongs to User and may reference Department and Objective; AuditLog snapshots actor details without a foreign key",
+        "Prisma datasource is PostgreSQL: pooled DATABASE_URL for app traffic and DIRECT_URL for migrations"
+      ]
+    }
+  ]
+}
