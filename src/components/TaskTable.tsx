@@ -19,7 +19,7 @@ export type TaskRow = {
 const PRIORITY_STYLES: Record<string, string> = {
   high: "bg-danger/10 text-danger",
   medium: "bg-amber-50 text-amber-700",
-  low: "bg-gray-100 text-gray-600",
+  low: "bg-stone-100 text-stone-600",
 };
 
 export default function TaskTable({

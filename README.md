@@ -2,6 +2,8 @@
 
 Role-based daily task tracker for multi-department teams (Design, Dev, Content, Grants, etc).
 
+> **How the scoring/KPI math actually works** (Consistency, Objectives, Composite Scores) is documented separately in [`SCORING.md`](./SCORING.md) — read that if a number on screen doesn't look right, rather than guessing from the code.
+
 - **Admins**: manage departments and members, view all tasks, filter by department/member/status/date, see per-member and per-department stats.
 - **Members**: log daily tasks (text or link) with a status, see their own history.
 
@@ -169,6 +171,16 @@ Manage them under **Objectives** in the sidebar (Admin sees/creates for any depa
 
 - Any logged-in user (any role) can change their own password from **Account** in the sidebar — requires knowing the current password.
 - An Admin (or a Lead, for members in their own department) can reset someone else's password from the **Members** page → "Reset password" → enter a new temporary password. This does **not** delete the account or its task history — unlike earlier versions of this project, you never need to recreate a user just to change their password.
+
+## Theming (colors, background, sidebar)
+
+The look is driven by a few places, so recoloring doesn't mean hunting through pages:
+
+- `tailwind.config.ts` - the palette: `brand` (teal accent + sidebar), `tint` (mint / sand / sky / blush card washes), `hairline` (borders), `muted` (secondary text), and the `soft` card shadow.
+- `src/app/globals.css` - the page background gradient (on `body`), and the shared `.card`, `.btn-*`, `.input`, table, and stat-card styles.
+- `src/components/Sidebar.tsx` - the sidebar gradient (`from-brand-500 to-brand-700`), collapsible with icons; its collapsed state is remembered per browser.
+- `src/components/icons.tsx` - the inline SVG icon set used by the sidebar (no icon package needed).
+- Chart colors live in `StatusPieChart.tsx`, `ComparisonBarChart.tsx`, and `TrendChart.tsx`; status colors are deliberately the same three hues (sand / sky / teal-green) in `StatusBadge.tsx` and the pie chart.
 
 ## Project structure
 

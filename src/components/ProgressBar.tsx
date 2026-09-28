@@ -8,7 +8,7 @@ export default function ProgressBar({
   target: number;
 }) {
   const pct = target > 0 ? Math.min(100, Math.round((progress / target) * 100)) : 0;
-  const color = pct >= 100 ? "bg-positive" : pct >= 50 ? "bg-amber-500" : "bg-danger";
+  const color = pct >= 100 ? "bg-positive" : pct >= 50 ? "bg-amber-400" : "bg-danger/80";
 
   return (
     <div>
@@ -18,8 +18,8 @@ export default function ProgressBar({
           {progress} / {target} ({pct}%)
         </span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-        <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
+      <div className="h-2.5 w-full overflow-hidden rounded-full bg-brand-50">
+        <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

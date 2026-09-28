@@ -69,8 +69,8 @@ export default async function MemberDashboard() {
       <StatCard hero label="Tasks done this month" value={doneThisMonth} trend={heroTrend} />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
-        <StatCard label="Total tasks logged" value={totalCount} />
-        <StatCard label="Tasks done (all time)" value={doneCount} />
+        <StatCard tone="sky" label="Total tasks logged" value={totalCount} />
+        <StatCard tone="mint" label="Tasks done (all time)" value={doneCount} />
       </div>
 
       {goals.length > 0 && (

@@ -43,9 +43,9 @@ export default async function MemberDetailPage({ params }: { params: { id: strin
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <StatCard label="Total tasks" value={total} />
-        <StatCard label="Done" value={done} />
-        <StatCard label="Completion rate" value={total ? `${Math.round((done / total) * 100)}%` : "—"} />
+        <StatCard tone="sky" label="Total tasks" value={total} />
+        <StatCard tone="mint" label="Done" value={done} />
+        <StatCard tone="sand" label="Completion rate" value={total ? `${Math.round((done / total) * 100)}%` : "—"} />
       </div>
 
       <div className="card">

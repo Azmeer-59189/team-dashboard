@@ -13,7 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         role={session.user.role === "ADMIN" ? "admin" : "lead"}
         name={session.user.name ?? session.user.email ?? ""}
       />
-      <main className="min-h-screen flex-1 overflow-y-auto bg-canvas p-4 sm:p-6 lg:p-8">
+      <main className="min-h-screen min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-7xl">{children}</div>
       </main>
     </div>

@@ -2,50 +2,85 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Shared page background: pale sage -> cream -> warm sand. Fixed so it stays
+   put while content scrolls, and every page (including login) inherits it. */
 body {
-  @apply bg-canvas text-ink font-sans;
+  @apply text-ink font-sans;
+  min-height: 100vh;
+  background: linear-gradient(160deg, #e6f0eb 0%, #f2f5ee 45%, #f8f0e2 100%);
+  background-attachment: fixed;
 }
 
 h1, h2, h3, .font-display {
   font-family: 'Space Grotesk', system-ui, sans-serif;
 }
+h1 {
+  @apply tracking-tight;
+}
 
-/* Standard card: hairline border, no shadow by default - shadow is reserved
-   for the one hero stat per page, per the design plan. */
+/* Standard card: rounded, hairline border, soft green-tinted shadow. */
 .card {
-  @apply bg-surface rounded-xl border border-hairline p-5;
+  @apply bg-surface rounded-2xl border border-hairline p-5 shadow-soft;
 }
 
 .btn-primary {
-  @apply inline-flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600 disabled:opacity-50;
+  @apply inline-flex items-center justify-center rounded-xl bg-brand-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 disabled:opacity-50;
 }
 
 .btn-secondary {
-  @apply inline-flex items-center justify-center rounded-lg border border-hairline bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-canvas;
+  @apply inline-flex items-center justify-center rounded-xl border border-hairline bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-tint-mint focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400;
 }
 
 .input {
-  @apply w-full rounded-lg border border-hairline bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500;
+  @apply w-full rounded-xl border border-hairline bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20;
 }
 
 .badge {
   @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
 }
 
-/* Hero stat: the one bold number per page. Reserve this for exactly one
-   metric - everything else stays quiet (.stat-secondary). */
+/* Tables inside cards: quieter headers, gentle row hover. */
+.card table thead th {
+  @apply text-xs font-medium text-muted;
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
+}
+.card table tbody tr {
+  @apply transition-colors;
+}
+.card table tbody tr:hover {
+  background-color: rgb(15 110 92 / 0.05);
+}
+
+/* Hero stat: the one bold number per page, on a soft teal-to-sand wash. */
 .stat-hero {
-  @apply rounded-2xl border border-hairline bg-surface p-6 shadow-sm;
+  @apply rounded-3xl border border-brand-100 bg-gradient-to-br from-brand-50 via-white to-tint-sand p-6 shadow-soft;
 }
 .stat-hero-value {
-  @apply font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl;
+  @apply font-display text-4xl font-semibold tracking-tight text-brand-700 sm:text-5xl;
 }
 .stat-hero-label {
   @apply text-sm text-muted;
 }
 
+/* Secondary stats: quiet, tinted by tone. */
 .stat-secondary {
-  @apply rounded-lg border border-hairline bg-surface p-4;
+  @apply rounded-2xl border p-4;
+}
+.stat-tone-neutral {
+  @apply border-hairline bg-surface;
+}
+.stat-tone-mint {
+  @apply border-transparent bg-tint-mint;
+}
+.stat-tone-sand {
+  @apply border-transparent bg-tint-sand;
+}
+.stat-tone-sky {
+  @apply border-transparent bg-tint-sky;
+}
+.stat-tone-blush {
+  @apply border-transparent bg-tint-blush;
 }
 .stat-secondary-value {
   @apply font-display text-xl font-semibold text-ink;
@@ -54,8 +89,7 @@ h1, h2, h3, .font-display {
   @apply text-xs text-muted;
 }
 
-/* Trend pill: small, quiet, colored by direction. No icon glyphs -
-   a plain triangle character keeps it dependency-free. */
+/* Trend pill: small, quiet, colored by direction. */
 .trend-pill {
   @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;
 }

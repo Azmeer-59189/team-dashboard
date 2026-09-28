@@ -2,10 +2,11 @@
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
+// Same three hues as StatusBadge: sand / sky / teal-green.
 const COLORS: Record<string, string> = {
-  Pending: "#9ca3af",
-  "In progress": "#f59e0b",
-  Done: "#22c55e",
+  Pending: "#D8C9A3",
+  "In progress": "#6FA8D6",
+  Done: "#2E9E7A",
 };
 
 export default function StatusPieChart({
@@ -24,18 +25,18 @@ export default function StatusPieChart({
   ].filter((d) => d.value > 0);
 
   if (data.length === 0) {
-    return <p className="py-8 text-center text-sm text-gray-400">No tasks in this selection yet.</p>;
+    return <p className="py-8 text-center text-sm text-muted">No tasks in this selection yet.</p>;
   }
 
   return (
     <ResponsiveContainer width="100%" height={220}>
       <PieChart>
-        <Pie data={data} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2}>
+        <Pie data={data} dataKey="value" nameKey="name" innerRadius={52} outerRadius={82} paddingAngle={3} stroke="none">
           {data.map((d) => (
             <Cell key={d.name} fill={COLORS[d.name]} />
           ))}
         </Pie>
-        <Tooltip />
+        <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #DDE6E1", fontSize: 12 }} />
         <Legend />
       </PieChart>
     </ResponsiveContainer>

@@ -150,12 +150,12 @@ export default async function AdminOverview({
       />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <StatCard label="Members" value={memberCount} />
-        {!scope.isLead && <StatCard label="Departments" value={deptCount} />}
+        <StatCard tone="blush" label="Members" value={memberCount} />
+        {!scope.isLead && <StatCard tone="sky" label="Departments" value={deptCount} />}
         <StatCard label="Tasks (filtered)" value={total} />
-        <StatCard label="Pending" value={pending} />
-        <StatCard label="In progress" value={inProgress} />
-        <StatCard label="Done" value={done} />
+        <StatCard tone="sand" label="Pending" value={pending} />
+        <StatCard tone="sky" label="In progress" value={inProgress} />
+        <StatCard tone="mint" label="Done" value={done} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
