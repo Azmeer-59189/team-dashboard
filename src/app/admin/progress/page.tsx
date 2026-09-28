@@ -34,7 +34,10 @@ export default async function ProgressPage({
     <div className="space-y-4">
       <div>
         <h1 className="font-display text-xl font-semibold text-ink">KPI Progress</h1>
-        <p className="text-sm text-muted">Based on tasks marked "done" in the current week/month.</p>
+        <p className="text-sm text-muted">
+          Shows done tasks against each person's weekly, monthly, or annual goal. This is task progress, not the
+          monthly Composite Score; an individual goal replaces the department default for that person and period.
+        </p>
       </div>
 
       {!scope.isLead && (

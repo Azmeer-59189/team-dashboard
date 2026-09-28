@@ -36,7 +36,9 @@ export default async function CompositeScoresPage({
       <div>
         <h1 className="font-display text-xl font-semibold text-ink">Composite KPI Scores</h1>
         <p className="text-sm text-muted">
-          Core (automatic KPIs, 65%) + Behavioural (manager-rated, 35%) = Overall, this month.
+          Each row is one person's monthly score. Core uses their monthly Core goal; Behavioural is the average of
+          manager-entered scores for this month. When both exist, Overall weights them 65% / 35%. If only one exists,
+          it becomes the whole Overall. A dash means no data; department filters do not create a team average.
         </p>
       </div>
 

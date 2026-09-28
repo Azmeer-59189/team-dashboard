@@ -66,13 +66,18 @@ export default async function MemberDetailPage({ params }: { params: { id: strin
           />
         </div>
         <p className="mt-3 text-xs text-muted">
-          Core is weighted 65%, Behavioural 35% - if only one has data, it counts for the whole score. Core comes
-          from this person's monthly "Core" KPIs on the Goals page; Behavioural comes from manual scores below.
+          Core compares this person's completed tasks with their monthly Core target. Behavioural averages the
+          manager-entered scores for this month. When both exist, they count 65% and 35%; if only one exists, it
+          becomes the whole Overall. Missing data is not treated as zero.
         </p>
       </div>
 
       <div className="card space-y-4">
         <h2 className="font-display font-semibold text-ink">Manual scores (Behavioural)</h2>
+        <p className="text-xs text-muted">
+          Add a separate 0–10 rating for each competency you want to assess. This person's entries for the selected
+          month are averaged equally and contribute to Behavioural; notes provide context but do not change the score.
+        </p>
         <ManualScoreForm userId={user.id} />
         <ManualScoresList
           scores={manualScores.map((s) => ({

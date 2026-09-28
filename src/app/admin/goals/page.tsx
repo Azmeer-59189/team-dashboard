@@ -138,8 +138,9 @@ export default function GoalsPage() {
         <h1 className="font-display text-xl font-semibold text-ink">KPI Goals</h1>
         <p className="text-sm text-muted">
           Set how many "done" tasks each department (or specific member) should complete per week/month/year.
-          An individual target overrides the department default for that person. Category (Core vs Behavioural)
-          and Weight feed into the Composite KPI Score on each member's profile.
+          An individual target overrides the department default for that person. A person's monthly Core goal feeds
+          the Core part of their Composite Score. Behavioural scores are entered separately on that person's profile;
+          the category and weight settings here do not change the current Composite Score calculation.
         </p>
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}

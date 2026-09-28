@@ -51,7 +51,8 @@ export default async function ConsistencyPage({
       <div>
         <h1 className="font-display text-xl font-semibold text-ink">Consistency</h1>
         <p className="text-sm text-muted">
-          Days with at least one task logged, out of the last {WINDOW_DAYS} days. Any status counts here (not just "done") — this tracks who's showing up, not just who's finishing work.
+          Counts days with at least one task logged in the last {WINDOW_DAYS} days. Any task status counts. This
+          reflects task-logging activity; it does not measure completed work and does not affect the Composite Score.
         </p>
       </div>
 

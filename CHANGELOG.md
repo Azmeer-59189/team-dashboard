@@ -1,5 +1,10 @@
 # Change Log
 
+## 2026-09-28
+
+- Reorganized the scoring guide as a manager-focused walkthrough, with plain-language examples for KPI progress, manual ratings, composite scores, and team views.
+- Added short explanations to scoring pages describing what each metric measures and how it affects a person's score; clarified that goal category/weight settings do not alter the current composite score calculation.
+
 ## 2026-09-26
 
 - Added a collapsible sidebar with navigation icons, accessible labels, and a compact icon-only view.

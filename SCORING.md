@@ -1,136 +1,98 @@
-# Scoring & Ratings — How the Numbers Are Calculated
+# Scoring & Ratings: A Manager's Guide
 
-This is the reference for every calculated number in the dashboard: KPI progress, Consistency, Objectives, and the Composite Score. If a number on screen looks wrong, this doc tells you which rule produced it.
+This guide explains what the dashboard's numbers mean, what you need to enter, and how the monthly individual score is calculated. You do not need to calculate scores by hand; the dashboard does that for you.
 
----
+## Start here: three different views
 
-## 1. KPI Goals — the basic building block
+- **KPI progress** answers: “How many tasks has this person completed toward their target?”
+- **Consistency** answers: “On how many recent days did this person log a task?” It does not measure task completion.
+- **Objectives** answer: “How much progress has the department made toward this month's objective?”
 
-A **Goal** is a target number of tasks marked **"done"**, within a period (Weekly, Monthly, or Annual).
+The **Composite KPI Score** is a separate monthly view for each individual. It combines a task-based Core score with a manager-entered Behavioural score when both are available. The department filter shows members in that department; it does not create a team score.
 
-- **Department default**: applies to every member of that department, for that period.
-- **Individual override**: applies to one specific person, for that period. **An override always wins** over the department default for that person — the department default simply doesn't apply to them for that period.
-- Only one goal can exist per (department, period) pair, and per (person, period) pair — creating a second one updates the first rather than adding a duplicate.
+## What a manager needs to do
 
-**Progress calculation** (`lib/goals.ts`):
+1. Set up the relevant goals for the department or person. A department goal is the default; a person's individual goal takes precedence for that period. For the Composite Score, only the applicable monthly Core goal is currently used; the goal form's category and weight settings do not alter its calculation.
+2. Keep tasks up to date. A task counts toward goal progress when it is marked done and its task date falls within the period.
+3. If you want a Behavioural component, open **Members**, select the person, and add one or more **Manual scores** on their profile. Choose a competency, enter a score from 0 to 10, select the month, and optionally add notes. The app does not create this assessment for you.
+4. Review the person's Core, Behavioural, Overall, and rating label on the Composite KPI Scores page.
+
+You can still review task progress when no manual score has been entered. Missing information is not automatically treated as a zero.
+
+## The monthly individual score, in plain language
+
+### Core: progress against the monthly task goal
+
+Core uses the person's applicable **monthly Core goal**: their individual goal if one exists, otherwise the department's default monthly Core goal. It compares the number of that person's tasks marked done this month with the target. Progress is capped at 100%.
+
+**Example:** The target is 20 tasks and the person has completed 15 this month. Core is 75%.
+
+Only one monthly Core goal applies to a person under the current goal rules. Other goals can still appear in KPI progress, but they are not added into this Core component.
+
+### Behavioural: the manager's assessment
+
+Behavioural comes from manual scores you enter for that person for the current month. Each entry is scored from 0 to 10. The app averages all of the person's entries for that month, giving every entry equal weight, then converts the average to a percentage.
+
+**Example:** Teamwork 8/10 and Communication 6/10 average to 7/10, which becomes 70% Behavioural. The competency names and notes are kept with the entries, but they do not change the calculation.
+
+### Overall: how the two parts combine
+
+When both parts are available, Core contributes 65% and Behavioural contributes 35%:
+
+`Overall = (Core × 0.65) + (Behavioural × 0.35)`
+
+**Example:** Core 75% and Behavioural 70% gives an Overall of 73.25, displayed as 73/100.
+
+If only one part is available, that part becomes the Overall by itself. If neither is available, the result is **No data**. So an Overall based on Core alone is not calculated the same way as one based on both parts; check the Core and Behavioural columns to see what went into it.
+
+The page's rating label is based on Overall:
+
+- **80 or above:** Excellent
+- **60 to 79:** Good
+- **Below 60:** Needs improvement
+- **No Overall score:** No data
+
+These labels summarize the number; they do not explain why a person received it. Review the underlying components and, where applicable, the manager's notes for context.
+
+## Team view
+
+Composite KPI Scores lists individual members. Filtering by department narrows the list but does not average members into a department score or apply one manager rating to a whole team. Compare individual rows to review the department. A team-level score is not currently defined.
+
+## Other dashboard numbers
+
+### KPI goals and progress
+
+A goal is a target number of tasks marked done within a period: weekly, monthly, or annual. A department default applies to department members unless an individual goal overrides it for that person and period. Only one goal can exist per department and period, and per person and period; creating another updates the existing goal.
+
+KPI progress is the person's done-task count in the relevant date range compared with the goal's target. The period ranges are the current Monday–Sunday week, calendar month, or calendar year. There is no partial credit or carry-over from earlier periods. KPI Progress shows each person's applicable goals directly; it does not average them into a score.
+
+### Consistency
+
+Consistency counts distinct days in the last 30 days when the person logged at least one task, whatever its status. It is shown as active days out of 30. It measures task logging activity, not whether tasks were completed.
+
+### Objectives
+
+An Objective tracks a department's monthly aim. Its progress can use linked monthly goals, tasks tagged directly to the Objective, or both:
+
+- For a linked monthly goal, completion is done tasks this month divided by its target, capped at 100%. An individual goal contributes that person's progress. A department default contributes the average progress of members to whom that default applies; members with individual overrides are excluded.
+- If the Objective has a target task count, tagged tasks marked done this month are compared with that target.
+- If both sources are configured, their percentages are averaged equally. If only one is configured, that source is used. If neither is configured, the dashboard shows no progress data yet.
+
+## Calculation reference
+
+These formulas are included for anyone who wants the detail; managers can use the dashboard without calculating them manually.
+
+```text
+Core % = min(100, done tasks this month / applicable monthly Core goal target × 100)
+Behavioural % = average of this person's manual scores for the current YYYY-MM month × 10
+Overall = Core % × 0.65 + Behavioural % × 0.35  (when both exist)
 ```
-progress = count of that person's tasks where status = "done"
-           AND task_date falls inside the current period's date range
-target   = the goal's targetCount
-```
 
-**Period date ranges** (always based on today's date, recalculated live — nothing is stored per-period):
-- **Weekly**: Monday through Sunday of the current week.
-- **Monthly**: the 1st through the last day of the current calendar month.
-- **Annual**: January 1 through December 31 of the current year.
+If only one component exists, Overall equals that component; if neither exists, Overall is null (“No data”). The weights and labels are configured in `src/lib/compositeScore.ts`.
 
-There's no partial credit or rollover — a task done yesterday doesn't count toward this week's goal if yesterday was in a previous week.
-
----
-
-## 2. KPI Progress page
-
-Simply displays, for every member (and department leads), each of their currently-applicable goals (weekly/monthly/annual) with a progress bar: `progress / target`. Color: green ≥ 100%, amber ≥ 50%, red below.
-
-No averaging or scoring happens here — it's a direct, per-person view of section 1's numbers.
-
----
-
-## 3. Consistency
-
-**Not related to "done" status at all.** This measures whether someone is *showing up*, regardless of whether their work is finished.
-
-```
-active_days = number of distinct calendar days, in the last 30 days,
-              on which this person logged at least one task
-              (any status: pending, in-progress, or done)
-score shown = active_days / 30
-```
-
-This is why someone can have a perfect Consistency score while their KPI completion is low, or vice versa — they measure different things on purpose (showing up vs. finishing work).
-
----
-
-## 4. Objectives
-
-An Objective is a department's monthly "why." Its progress combines **up to two independent sources**, each optional:
-
-### 4a. Linked KPIs (`kpiAveragePct`)
-Any Goal (from section 1) can be linked to an Objective. For each **linked, Monthly-period** goal:
-```
-goal_completion_% = min(100, (done_tasks_in_current_month / target) × 100)
-```
-- If the goal is an **individual override**, this is just that one person's %.
-- If the goal is a **department default**, it's the **average** of that % across every department member who doesn't have their own override for that period (members with an override are excluded from this average, since the default doesn't apply to them).
-
-If more than one Goal is linked to the same Objective, their percentages are averaged together (simple average, unweighted) to get `kpiAveragePct`.
-
-### 4b. Directly-tagged tasks (`taskProgress`)
-If the Objective has a **target task count** set, this counts:
-```
-tagged_done = tasks tagged to this Objective, status = "done",
-              logged within the current calendar month
-progress    = tagged_done / targetTaskCount
-```
-
-### 4c. Combining into `overallPct`
-- If **both** 4a and 4b have data: `overall = average(kpiAveragePct, taskPct)` — a simple 50/50 average of the two percentages.
-- If **only one** has data: that one alone is the overall figure.
-- If **neither** has data: shown as "no progress data yet" rather than 0%, since 0% would misleadingly suggest failure rather than "nothing set up yet."
-
----
-
-## 5. Composite KPI Score
-
-The most involved calculation — one 0–100 "how is this person doing overall" number per month, combining objective task counts with subjective manager ratings.
-
-### 5a. Core score (automatic, from task counts)
-Looks at this person's **Monthly**, **Category = Core** goal — their individual override if they have one, otherwise their department's Core/Monthly default.
-```
-core_% = min(100, (done_tasks_this_month / target) × 100)
-```
-Only **one** Core/Monthly goal is considered per person (their applicable one, per the override rule in section 1) — this is a simplification; see the note at the bottom.
-
-### 5b. Behavioural score (manual, from manager ratings)
-```
-behavioural_% = average(all ManualScore entries for this person,
-                         where periodLabel = current "YYYY-MM")
-                × 10
-```
-Manual scores are entered 0–10 by an admin or lead (Members → person's profile → "Manual scores"). Multiple entries in the same month are simple-averaged, then multiplied by 10 to put them on the same 0–100 scale as the Core score.
-
-### 5c. Overall score
-```
-if both Core and Behavioural have data:
-    overall = (core_% × 0.65) + (behavioural_% × 0.35)
-else if only Core has data:
-    overall = core_%
-else if only Behavioural has data:
-    overall = behavioural_%
-else:
-    overall = null ("No data")
-```
-The 65/35 split is a fixed constant (`CORE_WEIGHT` / `BEHAVIOURAL_WEIGHT` in `lib/compositeScore.ts`) — matching the original spec this feature was modeled on. **Missing data is never scored as zero** — if someone has no manual scores yet, their Core score alone is their Overall, not a Core score dragged down by an assumed-zero Behavioural half.
-
-### 5d. Rating label
-```
-overall >= 80  → "Excellent"
-overall >= 60  → "Good"
-overall <  60  → "Needs improvement"
-overall = null → "No data"
-```
-These thresholds (`scoreLabel()` in `lib/compositeScore.ts`) are a reasonable starting point, not derived from anything — adjust them in that file if your organization wants different bands.
-
-### Known simplification, worth knowing about
-The original system this was modeled on supports **multiple weighted KPIs per person within the Core and Behavioural buckets** (e.g., three different Core KPIs, each with their own weight, averaged together). This app currently supports **one Core/Monthly goal per person** (via the standard override-or-default rule) rather than multiple simultaneously-weighted KPIs feeding into Core. If you need several Core KPIs averaged together per person, that's a deliberate follow-up to `getCoreScore()` in `lib/compositeScore.ts`, not something already handled.
-
----
-
-## Where each number lives in the code
-
-| Calculation | File |
+| Calculation | Source file |
 |---|---|
-| Goal progress, period date ranges | `src/lib/goals.ts` |
-| Objective progress (KPI + task rollup) | `src/lib/objectives.ts` |
-| Composite score (Core + Behavioural) | `src/lib/compositeScore.ts` |
-| Consistency (active days) | `src/app/admin/consistency/page.tsx` |
+| Goal progress and period date ranges | `src/lib/goals.ts` |
+| Objective progress | `src/lib/objectives.ts` |
+| Composite score and rating labels | `src/lib/compositeScore.ts` |
+| Consistency | `src/app/admin/consistency/page.tsx` |

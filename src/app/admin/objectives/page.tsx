@@ -92,7 +92,9 @@ export default function ObjectivesPage() {
         <h1 className="font-display text-xl font-semibold text-ink">Objectives</h1>
         <p className="text-sm text-muted">
           The "why" behind your KPIs. Link existing KPIs to an objective on the KPI Goals page, and members
-          can optionally tag their tasks to one when they log work. Progress resets each month.
+          can optionally tag their tasks to one when they log work. Progress resets each month. When both linked
+          KPI progress and tagged-task progress are available, they count equally in the overall percentage; this
+          department objective progress is separate from each person's Composite Score.
         </p>
       </div>
 
@@ -182,6 +184,9 @@ export default function ObjectivesPage() {
               <p className="text-xs text-muted">
                 {o.taskProgress.done} / {o.taskProgress.target} tagged tasks done this month
               </p>
+            )}
+            {o.kpiAveragePct !== null && o.taskProgress && (
+              <p className="text-xs text-muted">Overall combines linked KPI progress and tagged tasks equally.</p>
             )}
           </div>
         ))}
