@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/apiError";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getScope, canManage } from "@/lib/scope";
@@ -26,7 +27,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     await prisma.objective.update({ where: { id: params.id }, data: patch });
     return NextResponse.json({ ok: true });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    return serverError(err);
   }
 }
 
@@ -51,6 +52,6 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
     );
     return NextResponse.json({ ok: true });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    return serverError(err);
   }
 }

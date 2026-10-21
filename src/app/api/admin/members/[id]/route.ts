@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/apiError";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { getScope, canManage } from "@/lib/scope";
+import { getScope, canManage, canManageUser } from "@/lib/scope";
 import { logAudit } from "@/lib/audit";
+
+const ROLES = ["ADMIN", "LEAD", "MEMBER"] as const;
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   const session = await getSession();
@@ -10,18 +13,61 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const updates = await request.json();
-  const patch: Record<string, unknown> = {};
-  if ("full_name" in updates) patch.fullName = updates.full_name;
-  if ("role" in updates) patch.role = String(updates.role).toUpperCase();
-  if ("department_id" in updates) patch.departmentId = updates.department_id || null;
-  if ("job_title" in updates) patch.jobTitle = updates.job_title || null;
+  const updates = await request.json().catch(() => null);
+  if (!updates || typeof updates !== "object" || Array.isArray(updates)) {
+    return NextResponse.json({ error: "Expected a JSON object" }, { status: 400 });
+  }
+  const target = await prisma.user.findUnique({ where: { id: params.id } });
+  if (!target) return NextResponse.json({ error: "Member not found" }, { status: 404 });
+
+  const patch: { fullName?: string; role?: (typeof ROLES)[number]; departmentId?: string | null; jobTitle?: string | null } = {};
+  if ("full_name" in updates) {
+    const name = typeof updates.full_name === "string" ? updates.full_name.trim() : "";
+    if (!name || name.length > 200) {
+      return NextResponse.json({ error: "Name must be between 1 and 200 characters" }, { status: 400 });
+    }
+    patch.fullName = name;
+  }
+  if ("role" in updates) {
+    const role = String(updates.role).toUpperCase();
+    if (!ROLES.includes(role as (typeof ROLES)[number])) {
+      return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+    }
+    patch.role = role as (typeof ROLES)[number];
+  }
+  if ("department_id" in updates) {
+    const departmentId = updates.department_id || null;
+    if (departmentId !== null) {
+      const exists = typeof departmentId === "string" && (await prisma.department.findUnique({ where: { id: departmentId } }));
+      if (!exists) return NextResponse.json({ error: "Department not found" }, { status: 400 });
+    }
+    patch.departmentId = departmentId;
+  }
+  if ("job_title" in updates) {
+    const title = typeof updates.job_title === "string" ? updates.job_title.trim() : "";
+    if (title.length > 150) return NextResponse.json({ error: "Job title must be under 150 characters" }, { status: 400 });
+    patch.jobTitle = title || null;
+  }
+
+  // never leave the organization without an administrator
+  if (target.role === "ADMIN" && patch.role && patch.role !== "ADMIN") {
+    const admins = await prisma.user.count({ where: { role: "ADMIN" } });
+    if (admins <= 1) {
+      return NextResponse.json({ error: "There must be at least one administrator" }, { status: 400 });
+    }
+  }
 
   try {
     await prisma.user.update({ where: { id: params.id }, data: patch });
+    const changes = Object.keys(patch).join(", ");
+    await logAudit(
+      { id: session.user.id, name: session.user.name ?? session.user.email ?? "Admin" },
+      "member.update",
+      `${target.fullName} (${target.email})${changes ? ` - ${changes}` : ""}`
+    );
     return NextResponse.json({ ok: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+  } catch (err) {
+    return serverError(err, "Could not update member");
   }
 }
 
@@ -39,7 +85,7 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
   if (!target) return NextResponse.json({ error: "Member not found" }, { status: 404 });
 
   // a lead may only remove members within their own department, and never an admin/lead
-  if (scope.isLead && (target.departmentId !== scope.departmentId || target.role !== "MEMBER")) {
+  if (!canManageUser(scope, target)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -52,6 +98,6 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
     );
     return NextResponse.json({ ok: true });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    return serverError(err);
   }
 }

@@ -2,6 +2,7 @@ import type { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { passwordVersion } from "@/lib/passwordVersion";
 
 export const authOptions: AuthOptions = {
   session: { strategy: "jwt" },
@@ -16,8 +17,9 @@ export const authOptions: AuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+        // emails are matched case-insensitively ("Ali@x.com" and "ali@x.com" are the same person)
+        const user = await prisma.user.findFirst({
+          where: { email: { equals: credentials.email.trim(), mode: "insensitive" } },
         });
         if (!user) return null;
 
@@ -30,6 +32,7 @@ export const authOptions: AuthOptions = {
           email: user.email,
           role: user.role,
           departmentId: user.departmentId,
+          pwv: passwordVersion(user.passwordHash),
         };
       },
     }),
@@ -40,6 +43,7 @@ export const authOptions: AuthOptions = {
         token.id = (user as any).id;
         token.role = (user as any).role;
         token.departmentId = (user as any).departmentId;
+        token.pwv = (user as any).pwv;
       }
       return token;
     },
@@ -48,6 +52,7 @@ export const authOptions: AuthOptions = {
         (session.user as any).id = token.id;
         (session.user as any).role = token.role;
         (session.user as any).departmentId = token.departmentId;
+        (session.user as any).pwv = token.pwv;
       }
       return session;
     },

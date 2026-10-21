@@ -6,7 +6,13 @@
 - Task creation only accepts objectives belonging to the caller's department. Task validation rejects malformed field types and impossible calendar dates; partial edits validate the resulting task's link/content combination.
 - Overview charts and totals aggregate all matching tasks in PostgreSQL, without a 5,000-task cutoff. CSV exports include all matches and neutralize spreadsheet formula prefixes in text cells. Exports currently assemble the file in memory.
 - Historical composite scores use the requested month for both Core and Behavioural components.
-- Run `npm test` for task-validation regression tests and `npx tsc --noEmit` for type checking.
+- Run `npm test` for validation, permission-scope, and date-period regression tests and `npx tsc --noEmit` for type checking.
+- Changing or resetting a password signs out every session that was created with the old password (including the person's own; they are asked to sign in again).
+- Emails are matched case-insensitively at sign-in and when creating accounts, and new accounts are stored in lowercase.
+- Nobody can rate themselves or set their own KPI goal. A Lead may only rate, set goals for, reset passwords for, or remove ordinary members of their own department. A Lead with no department (for example after their department is deleted) has no management access until an admin reassigns them.
+- A KPI goal can only be linked to an Objective in the department it applies to.
+- Set `APP_TIME_ZONE` (e.g. `Asia/Karachi`) so "this week/month" and "last 30 days" follow your organization's calendar rather than the server's UTC clock.
+- API errors return a short message; full error details go to the server log only.
 
 Role-based daily task tracker for multi-department teams (Design, Dev, Content, Grants, etc).
 
@@ -211,7 +217,7 @@ src/components/                     -- Sidebar, TaskForm, TaskTable, FilterBar, 
 
 Unlike the Supabase version, Neon has no built-in Row-Level Security tied to your app's users, so access control lives entirely in the application code, at two points:
 
-1. **Middleware** (`src/middleware.ts`) redirects non-admins away from `/admin/*` and vice versa, and redirects logged-out users to `/login`.
+1. **Middleware** (`src/middleware.ts`) redirects logged-out users to `/login`. Role checks happen in the `/admin` and `/member` layouts, which reload the account from the database on every request (`src/lib/session.ts`).
 2. **Every API route** re-checks the session itself before touching the database (e.g. `if (session.user.role !== "ADMIN") return 403`, or "does this task belong to this user or is the caller an admin"). This is what actually stops a member from editing someone else's tasks or hitting an admin-only endpoint directly — the middleware alone is just UX, not security.
 
 If you add new API routes later, make sure each one repeats this check — there's no database-level backstop like there was with Supabase's RLS.

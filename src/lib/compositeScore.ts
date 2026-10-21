@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getPeriodRange } from "@/lib/goals";
+import { monthLabel, todayInTimeZone } from "@/lib/dates";
 
 // Matches the CRD spec: Core (automatic, count-based KPIs) 65% + Behavioural
 // (manager-rated) 35% = Overall/100. If one half has no data, the other counts
@@ -15,10 +16,6 @@ export type CompositeScore = {
   behaviouralScoreCount: number;
   overall: number | null;
 };
-
-function monthLabel(date: Date = new Date()) {
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
-}
 
 // Weighted average completion % across this person's applicable CORE, MONTHLY
 // KPIs (individual override wins over the department default, same rule as
@@ -53,7 +50,7 @@ async function getBehaviouralScore(userId: string, periodLabel: string) {
 export async function getCompositeScore(
   userId: string,
   departmentId: string | null,
-  reference: Date = new Date()
+  reference: Date = todayInTimeZone()
 ): Promise<CompositeScore> {
   const periodLabel = monthLabel(reference);
   const [core, behavioural] = await Promise.all([

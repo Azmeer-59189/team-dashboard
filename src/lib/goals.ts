@@ -1,10 +1,11 @@
 import { prisma } from "@/lib/prisma";
+import { todayInTimeZone } from "@/lib/dates";
 
 export type Period = "WEEKLY" | "MONTHLY" | "ANNUAL";
 
 // Returns the [start, end] date range for the period containing `reference`.
 // Weekly = Monday to Sunday. Monthly = 1st to last day of month. Annual = Jan 1 to Dec 31.
-export function getPeriodRange(period: Period, reference: Date = new Date()) {
+export function getPeriodRange(period: Period, reference: Date = todayInTimeZone()) {
   const ref = new Date(Date.UTC(reference.getUTCFullYear(), reference.getUTCMonth(), reference.getUTCDate()));
 
   if (period === "ANNUAL") {

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/apiError";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getScope, canManage } from "@/lib/scope";
@@ -12,7 +13,7 @@ export async function GET() {
   if (!canManage(scope)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const objectives = await prisma.objective.findMany({
-    where: scope.isLead && scope.departmentId ? { departmentId: scope.departmentId } : {},
+    where: scope.isLead ? { departmentId: scope.departmentId! } : {},
     include: { department: { select: { name: true } } },
     orderBy: { createdAt: "asc" },
   });
@@ -69,6 +70,6 @@ export async function POST(request: Request) {
     );
     return NextResponse.json({ objective });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    return serverError(err);
   }
 }

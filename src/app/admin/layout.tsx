@@ -6,6 +6,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.user.role === "MEMBER") redirect("/member");
+  // a lead whose department was removed has nothing to manage until they're reassigned
+  if (session.user.role === "LEAD" && !session.user.departmentId) redirect("/no-department");
 
   return (
     <div className="lg:flex">

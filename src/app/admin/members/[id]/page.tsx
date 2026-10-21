@@ -1,7 +1,7 @@
 import PageHeader from "@/components/PageHeader";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { getScope } from "@/lib/scope";
+import { getScope, canManageUser } from "@/lib/scope";
 import { redirect } from "next/navigation";
 import { formatTask } from "@/lib/format";
 import { getCompositeScore, scoreLabel } from "@/lib/compositeScore";
@@ -14,7 +14,7 @@ export default async function MemberDetailPage({ params }: { params: { id: strin
   const session = await getSession();
   const scope = getScope(session!);
 
-  const [user, tasks, manualScores, composite] = await Promise.all([
+  const [user, tasks, manualScores] = await Promise.all([
     prisma.user.findUnique({
       where: { id: params.id },
       include: { department: { select: { name: true } } },
@@ -24,11 +24,13 @@ export default async function MemberDetailPage({ params }: { params: { id: strin
       orderBy: { taskDate: "desc" },
     }),
     prisma.manualScore.findMany({ where: { userId: params.id }, orderBy: { createdAt: "desc" } }),
-    getCompositeScore(params.id, null),
   ]);
 
-  if (!user) redirect(scope.isLead ? "/admin/members" : "/admin/members");
+  if (!user) redirect("/admin/members");
   if (scope.isLead && user.departmentId !== scope.departmentId) redirect("/admin/members");
+
+  // the department default goal only applies if we pass the person's department
+  const composite = await getCompositeScore(user.id, user.departmentId);
 
   const total = tasks.length;
   const done = tasks.filter((t) => t.status === "DONE").length;
@@ -73,7 +75,15 @@ export default async function MemberDetailPage({ params }: { params: { id: strin
           Add a separate 0–10 rating for each competency you want to assess. This person's entries for the selected
           month are averaged equally and contribute to Behavioural; notes provide context but do not change the score.
         </p>
-        <ManualScoreForm userId={user.id} />
+        {canManageUser(scope, user) ? (
+          <ManualScoreForm userId={user.id} />
+        ) : (
+          <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-muted">
+            {user.id === scope.userId
+              ? "You can't add scores for yourself; another manager rates you."
+              : "Only an administrator can add scores for this person."}
+          </p>
+        )}
         <ManualScoresList
           scores={manualScores.map((s) => ({
             id: s.id,

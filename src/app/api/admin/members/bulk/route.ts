@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/apiError";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
@@ -32,6 +33,11 @@ export async function POST(request: Request) {
       results.push({ row: rowNum, email: row.email ?? "", ok: false, error: "Missing full_name/email/password" });
       continue;
     }
+    const email = String(row.email).trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      results.push({ row: rowNum, email: row.email, ok: false, error: "Invalid email address" });
+      continue;
+    }
     if (row.password.length < 6) {
       results.push({ row: rowNum, email: row.email, ok: false, error: "Password must be at least 6 characters" });
       continue;
@@ -56,12 +62,21 @@ export async function POST(request: Request) {
       departmentId = scope.departmentId;
     }
 
+    const duplicate = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: "insensitive" } },
+      select: { id: true },
+    });
+    if (duplicate) {
+      results.push({ row: rowNum, email, ok: false, error: "Email already exists" });
+      continue;
+    }
+
     try {
       const passwordHash = await bcrypt.hash(row.password, 10);
       await prisma.user.create({
         data: {
-          fullName: row.full_name,
-          email: row.email,
+          fullName: String(row.full_name).trim(),
+          email,
           passwordHash,
           role: dbRole as any,
           departmentId,
@@ -75,7 +90,7 @@ export async function POST(request: Request) {
         row: rowNum,
         email: row.email,
         ok: false,
-        error: err.code === "P2002" ? "Email already exists" : err.message,
+        error: err.code === "P2002" ? "Email already exists" : "Could not create this member",
       });
     }
   }

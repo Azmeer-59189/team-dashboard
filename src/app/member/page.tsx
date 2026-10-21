@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { formatTask } from "@/lib/format";
 import { getMemberGoalProgress, getPeriodRange } from "@/lib/goals";
+import { windowStart } from "@/lib/dates";
 import TaskForm from "@/components/TaskForm";
 import TaskTable from "@/components/TaskTable";
 import StatCard from "@/components/StatCard";
@@ -16,9 +17,7 @@ export default async function MemberDashboard() {
   const session = await getSession();
   const userId = session!.user.id;
 
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 29);
-  thirtyDaysAgo.setUTCHours(0, 0, 0, 0);
+  const thirtyDaysAgo = windowStart(30);
 
   const thisMonth = getPeriodRange("MONTHLY");
   const lastMonthRef = new Date(thisMonth.start);

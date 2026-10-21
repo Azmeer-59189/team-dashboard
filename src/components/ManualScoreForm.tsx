@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 function currentMonthLabel() {
   const d = new Date();
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
 export default function ManualScoreForm({ userId }: { userId: string }) {

@@ -4,11 +4,18 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "./icons";
 
+// The viewer's own calendar date. toISOString() would give the UTC date, which is
+// yesterday for the first hours of the day in timezones ahead of UTC.
+function localToday() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export default function TaskForm() {
   const router = useRouter();
   const [type, setType] = useState<"text" | "link">("text");
   const [content, setContent] = useState("");
-  const [taskDate, setTaskDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [taskDate, setTaskDate] = useState(localToday);
   const [status, setStatus] = useState("pending");
   const [objectiveId, setObjectiveId] = useState("");
   const [objectives, setObjectives] = useState<{ id: string; title: string }[]>([]);

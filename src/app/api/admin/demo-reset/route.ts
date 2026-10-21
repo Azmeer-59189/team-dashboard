@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/apiError";
 import { getSession } from "@/lib/session";
 import { seedDemoData } from "@/lib/demoSeed";
 
@@ -19,6 +20,6 @@ export async function POST() {
     const creds = await seedDemoData();
     return NextResponse.json({ ok: true, creds });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return serverError(err);
   }
 }

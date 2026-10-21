@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { signOut } from "next-auth/react";
 
 export default function ChangePasswordForm() {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -38,6 +39,8 @@ export default function ChangePasswordForm() {
     setNewPassword("");
     setConfirmPassword("");
     setSuccess(true);
+    // every session signed in with the old password (this one included) is now invalid
+    setTimeout(() => signOut({ callbackUrl: "/login" }), 1500);
   }
 
   return (
@@ -78,7 +81,7 @@ export default function ChangePasswordForm() {
         </div>
 
         {error && <p className="alert-error">{error}</p>}
-        {success && <p className="alert-success">Password changed successfully.</p>}
+        {success && <p className="alert-success">Password changed. Signing you out so you can sign in with the new one…</p>}
 
         <button type="submit" disabled={loading} className="btn-primary">
           {loading ? "Saving..." : "Change password"}

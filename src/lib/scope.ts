@@ -18,9 +18,20 @@ export function getScope(session: Session): Scope {
   };
 }
 
-// For routes only ADMIN or LEAD may call at all.
+// For routes only ADMIN or LEAD may call at all. A LEAD with no department (e.g. their
+// department was deleted) manages nothing: every lead filter is "departmentId = mine",
+// and with mine = null that would match unassigned users across the whole organization.
 export function canManage(scope: Scope) {
-  return scope.isAdmin || scope.isLead;
+  return scope.isAdmin || (scope.isLead && scope.departmentId != null);
+}
+
+// Whether `scope` may act on one specific person: rate them, set their goals, reset
+// their password, remove them. Nobody acts on themselves this way, and a LEAD may only
+// act on ordinary members of their own department.
+export function canManageUser(scope: Scope, target: { id: string; role: string; departmentId: string | null }) {
+  if (target.id === scope.userId) return false;
+  if (scope.isAdmin) return true;
+  return canManage(scope) && target.role === "MEMBER" && target.departmentId === scope.departmentId;
 }
 
 // A LEAD may only act within their own department; ADMIN may act on any department

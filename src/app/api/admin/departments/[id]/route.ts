@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/apiError";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
@@ -18,6 +19,6 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
     );
     return NextResponse.json({ ok: true });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    return serverError(err);
   }
 }

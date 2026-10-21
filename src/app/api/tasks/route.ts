@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/apiError";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { statusToDb, typeToDb, priorityToDb } from "@/lib/format";
@@ -77,6 +78,6 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ task });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    return serverError(err);
   }
 }

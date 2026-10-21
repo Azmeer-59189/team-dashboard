@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/apiError";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
@@ -59,12 +60,21 @@ export async function POST(request: Request) {
     finalDepartmentId = scope.departmentId;
   }
 
+  const normalizedEmail = email.trim().toLowerCase();
+  const existing = await prisma.user.findFirst({
+    where: { email: { equals: normalizedEmail, mode: "insensitive" } },
+    select: { id: true },
+  });
+  if (existing) {
+    return NextResponse.json({ error: "A user with that email already exists" }, { status: 400 });
+  }
+
   try {
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
         fullName: full_name.trim(),
-        email: email.trim(),
+        email: normalizedEmail,
         passwordHash,
         role: dbRole as any,
         departmentId: finalDepartmentId,
@@ -81,6 +91,6 @@ export async function POST(request: Request) {
     if (err.code === "P2002") {
       return NextResponse.json({ error: "A user with that email already exists" }, { status: 400 });
     }
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    return serverError(err);
   }
 }

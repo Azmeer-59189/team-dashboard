@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/apiError";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { getScope, canManage } from "@/lib/scope";
+import { getScope, canManage, canManageUser } from "@/lib/scope";
 
 export async function GET() {
   const session = await getSession();
@@ -79,12 +80,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Weight must be a positive number" }, { status: 400 });
   }
   const goalCategory = category === "BEHAVIOURAL" ? "BEHAVIOURAL" : "CORE";
+  if (objectiveId != null && objectiveId !== "" && typeof objectiveId !== "string") {
+    return NextResponse.json({ error: "Invalid objective" }, { status: 400 });
+  }
+
+  // A goal can only feed an objective of the department it applies to; otherwise one
+  // department's KPIs would move another department's objective progress.
+  async function objectiveBelongsTo(goalDepartmentId: string | null) {
+    if (!objectiveId) return true;
+    if (!goalDepartmentId) return false;
+    const objective = await prisma.objective.findFirst({
+      where: { id: objectiveId, departmentId: goalDepartmentId },
+      select: { id: true },
+    });
+    return objective != null;
+  }
 
   try {
     if (goalScope === "department") {
       if (!departmentId) return NextResponse.json({ error: "Department is required" }, { status: 400 });
+      if (typeof departmentId !== "string") return NextResponse.json({ error: "Invalid department" }, { status: 400 });
       if (scope.isLead && departmentId !== scope.departmentId) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+      if (!(await objectiveBelongsTo(departmentId))) {
+        return NextResponse.json({ error: "Objective must belong to the same department" }, { status: 400 });
       }
       const goal = await prisma.goal.upsert({
         where: { departmentId_period: { departmentId, period } },
@@ -94,11 +114,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ goal });
     } else {
       if (!userId) return NextResponse.json({ error: "Member is required" }, { status: 400 });
-      if (scope.isLead) {
-        const target_user = await prisma.user.findUnique({ where: { id: userId } });
-        if (!target_user || target_user.departmentId !== scope.departmentId) {
-          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-        }
+      if (typeof userId !== "string") return NextResponse.json({ error: "Invalid member" }, { status: 400 });
+      const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+      if (!targetUser) return NextResponse.json({ error: "Member not found" }, { status: 404 });
+      // nobody sets their own target; leads only set targets for members of their department
+      if (targetUser.id === scope.userId) {
+        return NextResponse.json({ error: "You can't set your own goal" }, { status: 403 });
+      }
+      if (!canManageUser(scope, targetUser)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+      if (!(await objectiveBelongsTo(targetUser.departmentId))) {
+        return NextResponse.json({ error: "Objective must belong to the member's department" }, { status: 400 });
       }
       const goal = await prisma.goal.upsert({
         where: { userId_period: { userId, period } },
@@ -108,6 +135,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ goal });
     }
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    return serverError(err);
   }
 }

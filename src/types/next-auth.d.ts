@@ -6,6 +6,8 @@ declare module "next-auth" {
       id: string;
       role: "ADMIN" | "LEAD" | "MEMBER";
       departmentId: string | null;
+      // fingerprint of the password hash at sign-in; see lib/passwordVersion.ts
+      pwv?: string;
     } & DefaultSession["user"];
   }
 }

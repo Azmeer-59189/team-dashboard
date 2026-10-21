@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { getScope, canManage } from "@/lib/scope";
+import { getScope, canManage, canManageUser } from "@/lib/scope";
 import { logAudit } from "@/lib/audit";
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
@@ -19,8 +19,12 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   const target = await prisma.user.findUnique({ where: { id: params.id } });
   if (!target) return NextResponse.json({ error: "Member not found" }, { status: 404 });
 
+  // your own password is changed from the Account page, which asks for the current one
+  if (target.id === scope.userId) {
+    return NextResponse.json({ error: "Change your own password from the Account page" }, { status: 400 });
+  }
   // a lead may only reset passwords for ordinary members in their own department
-  if (scope.isLead && (target.departmentId !== scope.departmentId || target.role !== "MEMBER")) {
+  if (!canManageUser(scope, target)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

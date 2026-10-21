@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/apiError";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
@@ -41,6 +42,6 @@ export async function POST(request: Request) {
     if (err.code === "P2002") {
       return NextResponse.json({ error: "A department with that name already exists" }, { status: 400 });
     }
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    return serverError(err);
   }
 }
