@@ -1,3 +1,4 @@
+import PageHeader from "@/components/PageHeader";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getScope } from "@/lib/scope";
@@ -31,21 +32,15 @@ export default async function ProgressPage({
   );
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="font-display text-xl font-semibold text-ink">KPI Progress</h1>
-        <p className="text-sm text-muted">
-          Shows done tasks against each person's weekly, monthly, or annual goal. This is task progress, not the
-          monthly Composite Score; an individual goal replaces the department default for that person and period.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader eyebrow="Performance" title="KPI Progress" description={<>Shows done tasks against each person's weekly, monthly, or annual goal. This is task progress, not the monthly Composite Score; an individual goal replaces the department default for that person and period.</>} />
 
       {!scope.isLead && (
-        <div className="card flex items-end gap-4">
+        <div className="card !p-4 sm:w-fit">
           <form method="get" className="flex items-end gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted">Department</label>
-              <select name="department" defaultValue={searchParams.department ?? ""} className="input">
+              <label className="label">Department</label>
+              <select name="department" defaultValue={searchParams.department ?? ""} className="input min-w-[200px]">
                 <option value="">All departments</option>
                 {departments.map((d) => (
                   <option key={d.id} value={d.id}>
@@ -61,15 +56,20 @@ export default async function ProgressPage({
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
         {rows.map(({ member, goals }) => (
-          <div key={member.id} className="card space-y-3">
-            <div>
-              <p className="font-display font-semibold text-ink">{member.fullName}</p>
-              <p className="text-xs text-muted">{member.department?.name ?? "No department"}</p>
+          <div key={member.id} className="card space-y-4">
+            <div className="flex items-center gap-3">
+              <span aria-hidden="true" className="avatar h-10 w-10 text-sm">
+                {member.fullName.charAt(0).toUpperCase()}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-display font-semibold text-ink">{member.fullName}</p>
+                <p className="text-xs text-muted">{member.department?.name ?? "No department"}</p>
+              </div>
             </div>
             {goals.length === 0 ? (
-              <p className="text-sm text-gray-400">No KPI set for this member.</p>
+              <p className="text-sm text-muted">No KPI set for this member.</p>
             ) : (
               goals.map((g) => (
                 <ProgressBar

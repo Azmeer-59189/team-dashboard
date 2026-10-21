@@ -42,15 +42,19 @@ export default function FilterBar({
     : members;
 
   return (
-    <section className="card" aria-label="Task filters">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-ink">Filter tasks</h2>
-        {searchParams.toString() && <button onClick={() => router.push(pathname)} className="rounded-lg px-2 py-1 text-xs font-medium text-brand-600 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500">Reset filters</button>}
+    <section className="card !p-4 sm:!p-5" aria-label="Task filters">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="section-title">Filters</h2>
+        {searchParams.toString() && (
+          <button onClick={() => router.push(pathname)} className="btn-ghost">
+            Clear all
+          </button>
+        )}
       </div>
       <div className="filter-grid">
       {!hideDepartment && (
         <div>
-          <label className="mb-1 block text-xs font-medium text-muted">Department</label>
+          <label className="label">Department</label>
           <select className="input" value={selectedDepartment} onChange={(e) => handleDepartmentChange(e.target.value)}>
             <option value="">All departments</option>
             {departments.map((d) => (
@@ -63,7 +67,7 @@ export default function FilterBar({
       )}
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-muted">Member</label>
+        <label className="label">Member</label>
         <select className="input" value={selectedMember} onChange={(e) => setParam("member", e.target.value)}>
           <option value="">All members</option>
           {visibleMembers.map((m) => (
@@ -75,7 +79,7 @@ export default function FilterBar({
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-muted">Status</label>
+        <label className="label">Status</label>
         <select
           className="input"
           value={searchParams.get("status") ?? ""}
@@ -89,7 +93,7 @@ export default function FilterBar({
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-muted">From</label>
+        <label className="label">From</label>
         <input
           type="date"
           className="input"
@@ -99,7 +103,7 @@ export default function FilterBar({
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-muted">To</label>
+        <label className="label">To</label>
         <input
           type="date"
           className="input"

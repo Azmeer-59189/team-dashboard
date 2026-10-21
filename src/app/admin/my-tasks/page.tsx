@@ -1,3 +1,4 @@
+import PageHeader from "@/components/PageHeader";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { formatTask } from "@/lib/format";
@@ -17,10 +18,7 @@ export default async function MyTasksPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-xl font-semibold text-ink">My Tasks</h1>
-        <p className="text-sm text-muted">Log your own daily work here.</p>
-      </div>
+      <PageHeader eyebrow="Workspace" title="My Tasks" description={<>Log your own daily work here.</>} />
 
       <TaskForm />
 

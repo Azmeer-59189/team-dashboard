@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Icon } from "./icons";
 
 export default function TaskForm() {
   const router = useRouter();
@@ -80,28 +81,32 @@ export default function TaskForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="card space-y-4">
-      <h2 className="font-display font-semibold text-ink">Submit a task</h2>
-
-      <div className="flex gap-2">
-        {(["text", "link"] as const).map((t) => (
-          <button
-            type="button"
-            key={t}
-            onClick={() => setType(t)}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium border ${
-              type === t
-                ? "border-brand-500 bg-brand-50 text-brand-600"
-                : "border-hairline text-muted"
-            }`}
-          >
-            {t === "text" ? "Text" : "Link"}
-          </button>
-        ))}
+    <form onSubmit={handleSubmit} className="card space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="card-title">Log a task</h2>
+          <p className="card-subtitle">Record what you worked on today.</p>
+        </div>
+        <div className="inline-flex rounded-xl bg-slate-100 p-1" role="group" aria-label="Task type">
+          {(["text", "link"] as const).map((t) => (
+            <button
+              type="button"
+              key={t}
+              onClick={() => setType(t)}
+              aria-pressed={type === t}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                type === t ? "bg-white text-brand-600 shadow-sm" : "text-slate-500 hover:text-ink"
+              }`}
+            >
+              <Icon name={t === "text" ? "file-text" : "link"} size={14} />
+              {t === "text" ? "Text" : "Link"}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium">
+        <label className="label">
           {type === "text" ? "What did you work on?" : "Link"}
         </label>
         {type === "text" ? (
@@ -125,9 +130,9 @@ export default function TaskForm() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-sm font-medium">Date</label>
+          <label className="label">Date</label>
           <input
             type="date"
             required
@@ -137,7 +142,7 @@ export default function TaskForm() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium">Status</label>
+          <label className="label">Status</label>
           <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>
             <option value="pending">Pending</option>
             <option value="in-progress">In progress</option>
@@ -146,12 +151,12 @@ export default function TaskForm() {
         </div>
       </div>
 
-      <details className="rounded-lg border border-hairline p-3">
-        <summary className="cursor-pointer text-sm font-medium text-muted">More details (optional)</summary>
+      <details className="disclosure rounded-xl border border-hairline bg-slate-50/60 px-4 py-3">
+        <summary>More details (optional)</summary>
         <div className="mt-3 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium">Category / task type</label>
+              <label className="label">Category / task type</label>
               <input
                 className="input"
                 list="category-suggestions"
@@ -166,7 +171,7 @@ export default function TaskForm() {
               </datalist>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">Chapter / region</label>
+              <label className="label">Chapter / region</label>
               <input
                 className="input"
                 list="chapter-suggestions"
@@ -182,9 +187,9 @@ export default function TaskForm() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium">Campaign</label>
+              <label className="label">Campaign</label>
               <input
                 className="input"
                 list="campaign-suggestions"
@@ -199,7 +204,7 @@ export default function TaskForm() {
               </datalist>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">Priority</label>
+              <label className="label">Priority</label>
               <select className="input" value={priority} onChange={(e) => setPriority(e.target.value)}>
                 <option value="">None</option>
                 <option value="low">Low</option>
@@ -210,19 +215,19 @@ export default function TaskForm() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">Due date</label>
+            <label className="label">Due date</label>
             <input type="date" className="input" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
           </div>
 
-          <label className="flex items-center gap-2 text-sm font-medium">
-            <input type="checkbox" checked={isDesignTask} onChange={(e) => setIsDesignTask(e.target.checked)} />
+          <label className="flex items-center gap-2.5 text-sm font-medium text-slate-700">
+            <input type="checkbox" className="h-4 w-4 rounded accent-brand-500" checked={isDesignTask} onChange={(e) => setIsDesignTask(e.target.checked)} />
             This is a design task (track delivery & revisions)
           </label>
 
           {isDesignTask && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-sm font-medium">Delivered date</label>
+                <label className="label">Delivered date</label>
                 <input
                   type="date"
                   className="input"
@@ -231,7 +236,7 @@ export default function TaskForm() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium">Revision rounds</label>
+                <label className="label">Revision rounds</label>
                 <input
                   type="number"
                   min={0}
@@ -247,7 +252,7 @@ export default function TaskForm() {
 
       {objectives.length > 0 && (
         <div>
-          <label className="mb-1 block text-sm font-medium">Objective (optional)</label>
+          <label className="label">Objective (optional)</label>
           <select className="input" value={objectiveId} onChange={(e) => setObjectiveId(e.target.value)}>
             <option value="">None</option>
             {objectives.map((o) => (
@@ -259,11 +264,14 @@ export default function TaskForm() {
         </div>
       )}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="alert-error">{error}</p>}
 
-      <button type="submit" disabled={loading} className="btn-primary">
-        {loading ? "Saving..." : "Add task"}
-      </button>
+      <div className="flex justify-end">
+        <button type="submit" disabled={loading} className="btn-primary">
+          <Icon name="plus" size={16} />
+          {loading ? "Saving..." : "Add task"}
+        </button>
+      </div>
     </form>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import PageHeader from "@/components/PageHeader";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import ProgressBar from "@/components/ProgressBar";
@@ -88,19 +89,15 @@ export default function ObjectivesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-xl font-semibold text-ink">Objectives</h1>
-        <p className="text-sm text-muted">
-          The "why" behind your KPIs. Link existing KPIs to an objective on the KPI Goals page, and members
-          can optionally tag their tasks to one when they log work. Progress resets each month. When both linked
-          KPI progress and tagged-task progress are available, they count equally in the overall percentage; this
-          department objective progress is separate from each person's Composite Score.
-        </p>
-      </div>
+      <PageHeader eyebrow="Performance" title="Objectives" description={<>The "why" behind your KPIs. Link existing KPIs to an objective on the KPI Goals page, and members can optionally tag their tasks to one when they log work. Progress resets each month. When both linked KPI progress and tagged-task progress are available, they count equally in the overall percentage; this department objective progress is separate from each person's Composite Score.</>} />
 
       <form onSubmit={handleSubmit} className="card grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="sm:col-span-2 lg:col-span-4">
+          <h2 className="card-title">New objective</h2>
+          <p className="card-subtitle">Progress is tracked month by month.</p>
+        </div>
         <div>
-          <label className="mb-1 block text-sm font-medium">Department</label>
+          <label className="label">Department</label>
           <select
             className="input"
             required
@@ -117,7 +114,7 @@ export default function ObjectivesPage() {
           </select>
         </div>
         <div className="lg:col-span-2">
-          <label className="mb-1 block text-sm font-medium">Title</label>
+          <label className="label">Title</label>
           <input
             className="input"
             required
@@ -127,7 +124,7 @@ export default function ObjectivesPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium">Direct task target (optional)</label>
+          <label className="label">Direct task target (optional)</label>
           <input
             type="number"
             min={1}
@@ -138,7 +135,7 @@ export default function ObjectivesPage() {
           />
         </div>
         <div className="sm:col-span-2 lg:col-span-4">
-          <label className="mb-1 block text-sm font-medium">Description (optional)</label>
+          <label className="label">Description (optional)</label>
           <textarea
             className="input"
             rows={2}
@@ -146,15 +143,15 @@ export default function ObjectivesPage() {
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
         </div>
-        <div className="sm:col-span-2 lg:col-span-4">
+        <div className="flex justify-end sm:col-span-2 lg:col-span-4">
           <button type="submit" disabled={loading} className="btn-primary">
             {loading ? "Creating..." : "Create objective"}
           </button>
         </div>
       </form>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="alert-error">{error}</p>}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
         {objectives.map((o) => (
           <div key={o.id} className="card space-y-3">
             <div className="flex items-start justify-between">
@@ -162,7 +159,7 @@ export default function ObjectivesPage() {
                 <p className="font-display font-semibold text-ink">{o.title}</p>
                 <p className="text-xs text-muted">{o.departmentName}</p>
               </div>
-              <button onClick={() => handleDelete(o.id)} className="text-xs text-red-600 hover:underline">
+              <button onClick={() => handleDelete(o.id)} className="btn-danger-ghost">
                 Delete
               </button>
             </div>
@@ -171,7 +168,7 @@ export default function ObjectivesPage() {
             {o.overallPct !== null ? (
               <ProgressBar label="Overall this month" progress={o.overallPct} target={100} />
             ) : (
-              <p className="text-sm text-gray-400">No progress data yet — link a KPI or set a task target.</p>
+              <p className="text-sm text-muted">No progress data yet — link a KPI or set a task target.</p>
             )}
 
             {o.kpiAveragePct !== null && (

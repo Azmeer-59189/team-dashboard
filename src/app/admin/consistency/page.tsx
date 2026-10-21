@@ -1,3 +1,4 @@
+import PageHeader from "@/components/PageHeader";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getScope } from "@/lib/scope";
@@ -47,21 +48,15 @@ export default async function ConsistencyPage({
   rows.sort((a, b) => a.distinctDays - b.distinctDays);
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="font-display text-xl font-semibold text-ink">Consistency</h1>
-        <p className="text-sm text-muted">
-          Counts days with at least one task logged in the last {WINDOW_DAYS} days. Any task status counts. This
-          reflects task-logging activity; it does not measure completed work and does not affect the Composite Score.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader eyebrow="Performance" title="Consistency" description={<>Counts days with at least one task logged in the last {WINDOW_DAYS} days. Any task status counts. This reflects task-logging activity; it does not measure completed work and does not affect the Composite Score.</>} />
 
       {!scope.isLead && (
-        <div className="card flex items-end gap-4">
+        <div className="card !p-4 sm:w-fit">
           <form method="get" className="flex items-end gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted">Department</label>
-              <select name="department" defaultValue={searchParams.department ?? ""} className="input">
+              <label className="label">Department</label>
+              <select name="department" defaultValue={searchParams.department ?? ""} className="input min-w-[200px]">
                 <option value="">All departments</option>
                 {departments.map((d) => (
                   <option key={d.id} value={d.id}>
@@ -77,14 +72,19 @@ export default async function ConsistencyPage({
         </div>
       )}
 
-      <div className="card space-y-4">
+      <div className="card divide-y divide-hairline !py-2">
         {rows.map(({ member, distinctDays }) => (
-          <div key={member.id}>
-            <div className="mb-1 flex items-baseline justify-between">
-              <span className="text-sm font-medium">{member.fullName}</span>
-              <span className="text-xs text-muted">{member.department?.name ?? "No department"}</span>
+          <div key={member.id} className="grid grid-cols-1 gap-3 py-4 sm:grid-cols-[220px_1fr] sm:items-center sm:gap-6">
+            <div className="flex min-w-0 items-center gap-3">
+              <span aria-hidden="true" className="avatar h-9 w-9 text-xs">
+                {member.fullName.charAt(0).toUpperCase()}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-ink">{member.fullName}</p>
+                <p className="text-xs text-muted">{member.department?.name ?? "No department"}</p>
+              </div>
             </div>
-            <ProgressBar label="Active days" progress={distinctDays} target={WINDOW_DAYS} />
+            <ProgressBar label="Active days" progress={distinctDays} target={WINDOW_DAYS} unit="days" />
           </div>
         ))}
         {rows.length === 0 && <p className="text-sm text-muted">No members found.</p>}

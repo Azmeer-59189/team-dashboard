@@ -1,9 +1,11 @@
+import PageHeader from "@/components/PageHeader";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getScope } from "@/lib/scope";
 import { formatTask, statusToDb } from "@/lib/format";
 import FilterBar from "@/components/FilterBar";
 import TaskTable from "@/components/TaskTable";
+import { Icon } from "@/components/icons";
 
 export default async function AdminTasksPage({
   searchParams,
@@ -49,13 +51,17 @@ export default async function AdminTasksPage({
   if (searchParams.to) exportParams.set("to", searchParams.to);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-xl font-semibold text-ink">All Tasks</h1>
-        <a href={`/api/admin/export/tasks?${exportParams.toString()}`} className="btn-secondary">
-          Export CSV
-        </a>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Workspace"
+        title="All Tasks"
+        description={`Showing the latest ${tasks.length} task${tasks.length === 1 ? "" : "s"} matching your filters (up to 200). Export includes every match.`}
+        actions={
+          <a href={`/api/admin/export/tasks?${exportParams.toString()}`} className="btn-secondary">
+            <Icon name="download" size={16} /> Export CSV
+          </a>
+        }
+      />
 
       <FilterBar
         departments={departments.map((d) => ({ id: d.id, label: d.name }))}

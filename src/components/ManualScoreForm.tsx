@@ -45,7 +45,7 @@ export default function ManualScoreForm({ userId }: { userId: string }) {
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
       <div>
-        <label className="mb-1 block text-xs font-medium text-muted">Competency</label>
+        <label className="label">Competency</label>
         <input
           className="input"
           required
@@ -55,7 +55,7 @@ export default function ManualScoreForm({ userId }: { userId: string }) {
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-muted">Score (0-10)</label>
+        <label className="label">Score (0-10)</label>
         <input
           type="number"
           min={0}
@@ -68,7 +68,7 @@ export default function ManualScoreForm({ userId }: { userId: string }) {
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-muted">Period (YYYY-MM)</label>
+        <label className="label">Period (YYYY-MM)</label>
         <input
           className="input"
           required
@@ -78,7 +78,7 @@ export default function ManualScoreForm({ userId }: { userId: string }) {
         />
       </div>
       <div className="sm:col-span-2 lg:col-span-1">
-        <label className="mb-1 block text-xs font-medium text-muted">Notes (optional)</label>
+        <label className="label">Notes (optional)</label>
         <input className="input" value={notes} onChange={(e) => setNotes(e.target.value)} />
       </div>
       <div className="flex items-end">

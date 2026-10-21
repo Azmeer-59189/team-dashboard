@@ -9,6 +9,11 @@ import TaskTable from "@/components/TaskTable";
 import StatusPieChart from "@/components/StatusPieChart";
 import ComparisonBarChart from "@/components/ComparisonBarChart";
 import TrendChart from "@/components/TrendChart";
+import PageHeader from "@/components/PageHeader";
+import { Icon } from "@/components/icons";
+import Link from "next/link";
+
+const RECENT_LIMIT = 10;
 
 export default async function AdminOverview({
   searchParams,
@@ -84,7 +89,7 @@ export default async function AdminOverview({
     where,
     include: { user: { select: { fullName: true } }, department: { select: { name: true } } },
     orderBy: { taskDate: "desc" },
-    take: 50,
+    take: RECENT_LIMIT,
   });
 
   const total = chartTasks.reduce((sum, t) => sum + t.count, 0);
@@ -134,23 +139,48 @@ export default async function AdminOverview({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4 pb-1">
-        <div>
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500">Your workspace</p>
-        <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">Team overview</h1>
-        <p className="mt-2 text-sm text-muted">
-          {scope.isLead ? "Your department's performance at a glance." : "Team-wide performance at a glance."}
-        </p>
-        </div>
-        <a href="/admin/my-tasks" className="btn-primary gap-2"><span aria-hidden="true">+</span> Log a task</a>
-      </div>
-
-      <StatCard
-        hero
-        label={scope.isLead ? "Your department's tasks done this month" : "Tasks done this month, org-wide"}
-        value={doneThisMonth}
-        trend={heroTrend}
+      <PageHeader
+        eyebrow={scope.isLead ? "Department workspace" : "Organization workspace"}
+        title="Team overview"
+        description={scope.isLead ? "Your department's performance at a glance." : "Team-wide performance at a glance."}
+        actions={
+          <>
+            <Link href="/admin/tasks" className="btn-secondary">
+              <Icon name="list" size={16} /> All tasks
+            </Link>
+            <Link href="/admin/my-tasks" className="btn-primary">
+              <Icon name="plus" size={16} /> Log a task
+            </Link>
+          </>
+        }
       />
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
+        <div className="xl:col-span-2">
+          <StatCard
+            hero
+            label={scope.isLead ? "Your department's tasks done this month" : "Tasks done this month, org-wide"}
+            value={doneThisMonth}
+            trend={heroTrend}
+            hint={`${doneLastMonth} last month`}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4 xl:col-span-3">
+          <StatCard tone="blush" icon="users" label="Members" value={memberCount} />
+          {scope.isLead ? (
+            <StatCard tone="neutral" icon="list" label="Tasks (filtered)" value={total} />
+          ) : (
+            <StatCard tone="violet" icon="layers" label="Departments" value={deptCount} />
+          )}
+          <StatCard
+            tone="mint"
+            label="Completion rate"
+            value={total ? `${Math.round((done / total) * 100)}%` : "—"}
+            hint={`${done} of ${total} filtered tasks done`}
+          />
+          <StatCard tone="sand" label="Open tasks" value={pending + inProgress} hint={`${pending} pending · ${inProgress} in progress`} />
+        </div>
+      </div>
 
       <FilterBar
         departments={departments.map((d) => ({ id: d.id, label: d.name }))}
@@ -158,32 +188,31 @@ export default async function AdminOverview({
         hideDepartment={scope.isLead}
       />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <StatCard tone="blush" label="Members" value={memberCount} />
-        {!scope.isLead && <StatCard tone="sky" label="Departments" value={deptCount} />}
-        <StatCard label="Tasks (filtered)" value={total} />
-        <StatCard tone="sand" label="Pending" value={pending} />
-        <StatCard tone="sky" label="In progress" value={inProgress} />
-        <StatCard tone="mint" label="Done" value={done} />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="card">
-          <h2 className="font-display font-semibold text-ink">Status breakdown</h2>
-          <p className="mb-4 mt-1 text-xs text-muted">How work is moving across your selection</p>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        <div className="card lg:col-span-2">
+          <h2 className="card-title">Status breakdown</h2>
+          <p className="card-subtitle mb-5">How work is moving across your selection</p>
           <StatusPieChart pending={pending} inProgress={inProgress} done={done} />
         </div>
-        <div className="card">
-          <h2 className="font-display font-semibold text-ink">
-            {chartMode === "trend" ? "Daily tasks (this selection)" : chartMode === "byMember" ? "Tasks by member" : "Tasks by department"}
+        <div className="card lg:col-span-3">
+          <h2 className="card-title">
+            {chartMode === "trend" ? "Daily tasks" : chartMode === "byMember" ? "Tasks by member" : "Tasks by department"}
           </h2>
-          <p className="mb-4 mt-1 text-xs text-muted">Task activity for the current filters</p>
+          <p className="card-subtitle mb-5">Task activity for the current filters</p>
           {chartMode === "trend" ? <TrendChart data={trendData} /> : <ComparisonBarChart data={barData} />}
         </div>
       </div>
 
       <div className="card">
-        <div className="mb-5 flex items-center justify-between gap-3"><div><h2 className="font-display font-semibold text-ink">Recent tasks</h2><p className="mt-1 text-xs text-muted">Latest 50 tasks matching your filters</p></div><a href={`/admin/tasks?${new URLSearchParams(searchParams).toString()}`} className="text-sm font-medium text-brand-600 hover:underline">View all tasks <span aria-hidden="true">&rarr;</span></a></div>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="card-title">Recent tasks</h2>
+            <p className="card-subtitle">Latest {RECENT_LIMIT} tasks matching your filters</p>
+          </div>
+          <Link href={`/admin/tasks?${new URLSearchParams(searchParams).toString()}`} className="btn-ghost">
+            View all <Icon name="arrow-right" size={14} />
+          </Link>
+        </div>
         <TaskTable tasks={tasks.map((t) => formatTask({ ...t, user: t.user, department: t.department }))} showOwner />
       </div>
     </div>

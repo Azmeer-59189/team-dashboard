@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 
 export default function ChangePasswordForm() {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -43,10 +42,10 @@ export default function ChangePasswordForm() {
 
   return (
     <div className="card space-y-4">
-      <h2 className="font-display font-semibold text-ink">Change password</h2>
+      <h2 className="card-title">Change password</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium">Current password</label>
+          <label className="label">Current password</label>
           <input
             type="password"
             required
@@ -56,7 +55,7 @@ export default function ChangePasswordForm() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium">New password</label>
+          <label className="label">New password</label>
           <input
             type="password"
             required
@@ -67,7 +66,7 @@ export default function ChangePasswordForm() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium">Confirm new password</label>
+          <label className="label">Confirm new password</label>
           <input
             type="password"
             required
@@ -78,16 +77,13 @@ export default function ChangePasswordForm() {
           />
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        {success && <p className="text-sm text-green-600">Password changed successfully.</p>}
+        {error && <p className="alert-error">{error}</p>}
+        {success && <p className="alert-success">Password changed successfully.</p>}
 
         <button type="submit" disabled={loading} className="btn-primary">
           {loading ? "Saving..." : "Change password"}
         </button>
       </form>
-      <Link href="/" className="block text-sm text-brand-600 hover:underline">
-        Back to dashboard
-      </Link>
     </div>
   );
 }

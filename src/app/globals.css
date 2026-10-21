@@ -2,131 +2,191 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Shared page background: pale sage -> cream -> warm sand. Fixed so it stays
-   put while content scrolls, and every page (including login) inherits it. */
+/* Shared page background: cool off-white with a faint indigo glow top-right.
+   Fixed so it stays put while content scrolls; every page (including login) inherits it. */
 body {
-  @apply text-ink font-sans;
+  @apply bg-canvas text-ink font-sans antialiased;
   min-height: 100vh;
-  background: radial-gradient(ellipse at top right, #e9f3ef 0%, transparent 48%), #f5f7f8;
+  background-image: radial-gradient(60rem 30rem at 100% -10%, rgb(91 95 239 / 0.07), transparent 60%);
   background-attachment: fixed;
 }
 
 h1, h2, h3, .font-display {
-  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 h1 {
   @apply tracking-tight;
 }
 
-/* Standard card: rounded, hairline border, soft green-tinted shadow. */
-.card {
-  @apply bg-surface rounded-2xl border border-hairline p-5 shadow-soft sm:p-6;
+@layer components {
+  /* Standard card: white, rounded, hairline border, soft shadow. */
+  .card {
+    @apply rounded-2xl border border-hairline bg-surface p-5 shadow-soft sm:p-6;
+  }
+  /* Any card holding a table scrolls sideways on narrow screens instead of squashing columns. */
+  .card:has(> table) {
+    @apply overflow-x-auto;
+  }
+  .card-title {
+    @apply font-display text-base font-semibold text-ink;
+  }
+  .card-subtitle {
+    @apply mt-0.5 text-xs text-muted;
+  }
+  .section-title {
+    @apply font-display text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 hover:shadow-lift focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-hairline bg-surface px-4 py-2.5 text-sm font-semibold text-ink shadow-sm transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-600 transition hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400;
+  }
+  .btn-danger-ghost {
+    @apply inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-danger transition hover:bg-danger/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-danger/40;
+  }
+
+  .input {
+    @apply min-h-10 w-full rounded-xl border border-hairline bg-white px-3 py-2 text-sm text-ink shadow-[inset_0_1px_1px_rgba(15,23,42,0.03)] transition placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-400 focus:outline-none focus:ring-4 focus:ring-brand-500/15 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-muted;
+  }
+  .label {
+    @apply mb-1.5 block text-xs font-semibold text-slate-600;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  .alert-error {
+    @apply rounded-xl border border-danger/20 bg-danger/5 px-4 py-3 text-sm font-medium text-danger;
+  }
+  .alert-success {
+    @apply rounded-xl border border-positive/20 bg-positive/5 px-4 py-3 text-sm font-medium text-positive;
+  }
+
+  .avatar {
+    @apply inline-flex shrink-0 items-center justify-center rounded-full bg-brand-100 font-display font-semibold text-brand-700;
+  }
+
+  /* Hero stat: the one bold number per page, on a deep indigo gradient. */
+  .stat-hero {
+    @apply relative h-full overflow-hidden rounded-2xl p-6 text-white shadow-lift sm:p-7;
+    background: linear-gradient(135deg, #5b5fef 0%, #4a4ad6 45%, #2e2a8f 100%);
+  }
+  .stat-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgb(255 255 255 / 0.12) 1px, transparent 1px);
+    background-size: 18px 18px;
+    mask-image: linear-gradient(to left, black, transparent 70%);
+    pointer-events: none;
+  }
+  .stat-hero::after {
+    content: "";
+    position: absolute;
+    width: 260px;
+    height: 260px;
+    right: -80px;
+    bottom: -140px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgb(167 139 250 / 0.55), transparent 70%);
+    pointer-events: none;
+  }
+  .stat-hero .trend-pill {
+    background: rgb(255 255 255 / 0.16);
+    color: white;
+  }
+  .stat-hero-value {
+    @apply font-display text-5xl font-bold tracking-tight;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-hero-label {
+    @apply text-sm font-medium text-white/75;
+  }
+
+  /* Secondary stats: white tiles with a tinted icon chip carrying the tone. */
+  .stat-secondary {
+    @apply flex h-full items-start gap-3.5 rounded-2xl border border-hairline bg-surface p-4 shadow-soft sm:p-5;
+  }
+  .stat-chip {
+    @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-xl;
+  }
+  .stat-tone-neutral .stat-chip { @apply bg-slate-100 text-slate-600; }
+  .stat-tone-mint .stat-chip { @apply bg-tint-mint text-positive; }
+  .stat-tone-sand .stat-chip { @apply bg-tint-sand text-pending; }
+  .stat-tone-sky .stat-chip { @apply bg-tint-sky text-sky-600; }
+  .stat-tone-blush .stat-chip { @apply bg-tint-blush text-rose-600; }
+  .stat-tone-violet .stat-chip { @apply bg-tint-violet text-brand-600; }
+  .stat-secondary-value {
+    @apply font-display text-2xl font-bold tracking-tight text-ink;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-secondary-label {
+    @apply text-xs font-medium text-muted;
+  }
+
+  /* Trend pill: small, quiet, colored by direction. */
+  .trend-pill {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold;
+  }
+  .trend-pill-up {
+    @apply bg-positive/10 text-positive;
+  }
+  .trend-pill-down {
+    @apply bg-danger/10 text-danger;
+  }
+
+  /* Native disclosure used for optional form sections. */
+  details.disclosure > summary {
+    @apply flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold text-slate-600;
+  }
+  details.disclosure > summary::-webkit-details-marker { display: none; }
+  details.disclosure > summary::after {
+    content: "+";
+    @apply flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-base leading-none text-slate-500;
+  }
+  details.disclosure[open] > summary::after { content: "\2212"; }
 }
 
-.btn-primary {
-  @apply inline-flex items-center justify-center rounded-xl bg-brand-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 disabled:opacity-50;
+/* Tables inside cards: small uppercase headers, roomy rows, gentle hover. */
+.card table {
+  @apply text-sm;
 }
-
-.btn-secondary {
-  @apply inline-flex items-center justify-center rounded-xl border border-hairline bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-tint-mint focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400;
-}
-
-.input {
-  @apply w-full min-h-10 rounded-xl border border-hairline bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted transition-colors hover:border-brand-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20;
-}
-
-.badge {
-  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
-}
-
-/* Tables inside cards: quieter headers, gentle row hover. */
 .card table thead th {
-  @apply bg-slate-50 text-xs font-semibold text-muted;
-  padding-top: 0.85rem;
-  padding-bottom: 0.85rem;
+  @apply whitespace-nowrap border-b border-hairline bg-slate-50/80 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500;
+  padding-top: 0.7rem;
+  padding-bottom: 0.7rem;
+}
+.card table thead th:first-child { @apply rounded-l-lg; }
+.card table thead th:last-child { @apply rounded-r-lg; }
+.card table thead tr { border-bottom: 0; }
+.card table tbody td {
+  @apply px-3 align-middle;
+  padding-top: 0.8rem;
+  padding-bottom: 0.8rem;
 }
 .card table tbody tr {
-  @apply transition-colors;
+  @apply border-b border-hairline/70 transition-colors;
 }
+.card table tbody tr:last-child { border-bottom: 0; }
 .card table tbody tr:hover {
-  background-color: rgb(15 110 92 / 0.05);
-}
-
-/* Hero stat: the one bold number per page, on a soft teal-to-sand wash. */
-.stat-hero {
-  @apply relative overflow-hidden rounded-3xl border border-brand-600 bg-gradient-to-br from-brand-600 to-brand-700 p-6 shadow-soft sm:p-8;
-}
-.stat-hero::after {
-  content: "";
-  position: absolute;
-  width: 240px;
-  height: 240px;
-  right: -65px;
-  top: -100px;
-  border: 36px solid rgb(255 255 255 / 0.06);
-  border-radius: 50%;
-  pointer-events: none;
-}
-.stat-hero .trend-pill {
-  background: rgb(255 255 255 / 0.14);
-  color: white;
-}
-.stat-hero-value {
-  @apply font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl;
-}
-.stat-hero-label {
-  @apply text-sm font-medium text-white/80;
-}
-
-/* Secondary stats: quiet, tinted by tone. */
-.stat-secondary {
-  @apply rounded-2xl border p-5;
-}
-.stat-tone-neutral {
-  @apply border-hairline bg-surface;
-}
-.stat-tone-mint {
-  @apply border-transparent bg-tint-mint;
-}
-.stat-tone-sand {
-  @apply border-transparent bg-tint-sand;
-}
-.stat-tone-sky {
-  @apply border-transparent bg-tint-sky;
-}
-.stat-tone-blush {
-  @apply border-transparent bg-tint-blush;
-}
-.stat-secondary-value {
-  @apply font-display text-2xl font-semibold tracking-tight text-ink;
-  font-variant-numeric: tabular-nums;
-}
-.stat-secondary-label {
-  @apply text-xs font-medium text-muted;
+  background-color: rgb(91 95 239 / 0.035);
 }
 
 .filter-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.875rem;
   align-items: end;
 }
-.task-table th:first-child, .task-table td:first-child { padding-left: 1rem; }
-.task-table th:last-child, .task-table td:last-child { padding-right: 1rem; }
-.task-table tbody td { padding-top: 1rem; padding-bottom: 1rem; vertical-align: top; }
-.task-table tbody tr:last-child { border-bottom: 0; }
-::selection { background: #d2e7e1; color: #0a4a3e; }
+
+::selection { background: #e0e4ff; color: #1e1b4b; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
-}
-
-/* Trend pill: small, quiet, colored by direction. */
-.trend-pill {
-  @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;
-}
-.trend-pill-up {
-  @apply bg-positive/10 text-positive;
-}
-.trend-pill-down {
-  @apply bg-danger/10 text-danger;
 }

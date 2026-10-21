@@ -51,7 +51,7 @@ export default function ManualScoresList({ scores }: { scores: Score[] }) {
             <td className="py-2 text-muted">{s.notes ?? "—"}</td>
             <td className="py-2 text-muted">{s.scorerName}</td>
             <td className="py-2 text-right">
-              <button onClick={() => handleDelete(s.id)} className="text-xs text-red-600 hover:underline">
+              <button onClick={() => handleDelete(s.id)} className="btn-danger-ghost">
                 Delete
               </button>
             </td>

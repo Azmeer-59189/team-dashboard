@@ -1,5 +1,6 @@
 "use client";
 
+import PageHeader from "@/components/PageHeader";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 
@@ -134,23 +135,15 @@ export default function GoalsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-xl font-semibold text-ink">KPI Goals</h1>
-        <p className="text-sm text-muted">
-          Set how many "done" tasks each department (or specific member) should complete per week/month/year.
-          An individual target overrides the department default for that person. A person's monthly Core goal feeds
-          the Core part of their Composite Score. Behavioural scores are entered separately on that person's profile;
-          the category and weight settings here do not change the current Composite Score calculation.
-        </p>
-      </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      <PageHeader eyebrow="Performance" title="KPI Goals" description={<>Set how many "done" tasks each department (or specific member) should complete per week/month/year. An individual target overrides the department default for that person. A person's monthly Core goal feeds the Core part of their Composite Score. Behavioural scores are entered separately on that person's profile; the category and weight settings here do not change the current Composite Score calculation.</>} />
+      {error && <p className="alert-error">{error}</p>}
 
       {/* Department goals */}
       <div className="space-y-3">
-        <h2 className="font-display font-semibold text-ink">Department defaults</h2>
+        <h2 className="card-title">Department defaults</h2>
         <form onSubmit={handleDeptSubmit} className="card grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-7">
           <div>
-            <label className="mb-1 block text-sm font-medium">Department</label>
+            <label className="label">Department</label>
             <select
               className="input"
               required
@@ -167,7 +160,7 @@ export default function GoalsPage() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Period</label>
+            <label className="label">Period</label>
             <select
               className="input"
               value={deptForm.period}
@@ -179,7 +172,7 @@ export default function GoalsPage() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Target (done tasks)</label>
+            <label className="label">Target (done tasks)</label>
             <input
               type="number"
               min={1}
@@ -190,7 +183,7 @@ export default function GoalsPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Category</label>
+            <label className="label">Category</label>
             <select
               className="input"
               value={deptForm.category}
@@ -201,7 +194,7 @@ export default function GoalsPage() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Weight</label>
+            <label className="label">Weight</label>
             <input
               type="number"
               min={0.1}
@@ -212,7 +205,7 @@ export default function GoalsPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Objective (optional)</label>
+            <label className="label">Objective (optional)</label>
             <select
               className="input"
               value={deptForm.objectiveId}
@@ -257,7 +250,7 @@ export default function GoalsPage() {
                   <td className="py-2 pr-4">{g.weight ?? 1}</td>
                   <td className="py-2 pr-4 text-muted">{g.objectiveTitle ?? "—"}</td>
                   <td className="py-2 text-right">
-                    <button onClick={() => handleDelete(g.id)} className="text-xs text-red-600 hover:underline">
+                    <button onClick={() => handleDelete(g.id)} className="btn-danger-ghost">
                       Delete
                     </button>
                   </td>
@@ -277,10 +270,10 @@ export default function GoalsPage() {
 
       {/* Individual overrides */}
       <div className="space-y-3">
-        <h2 className="font-display font-semibold text-ink">Individual overrides</h2>
+        <h2 className="card-title">Individual overrides</h2>
         <form onSubmit={handleMemberSubmit} className="card grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-7">
           <div>
-            <label className="mb-1 block text-sm font-medium">Member</label>
+            <label className="label">Member</label>
             <select
               className="input"
               required
@@ -296,7 +289,7 @@ export default function GoalsPage() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Period</label>
+            <label className="label">Period</label>
             <select
               className="input"
               value={memberForm.period}
@@ -308,7 +301,7 @@ export default function GoalsPage() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Target (done tasks)</label>
+            <label className="label">Target (done tasks)</label>
             <input
               type="number"
               min={1}
@@ -319,7 +312,7 @@ export default function GoalsPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Category</label>
+            <label className="label">Category</label>
             <select
               className="input"
               value={memberForm.category}
@@ -330,7 +323,7 @@ export default function GoalsPage() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Weight</label>
+            <label className="label">Weight</label>
             <input
               type="number"
               min={0.1}
@@ -341,7 +334,7 @@ export default function GoalsPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Objective (optional)</label>
+            <label className="label">Objective (optional)</label>
             <select
               className="input"
               value={memberForm.objectiveId}
@@ -388,7 +381,7 @@ export default function GoalsPage() {
                   <td className="py-2 pr-4">{g.weight ?? 1}</td>
                   <td className="py-2 pr-4 text-muted">{g.objectiveTitle ?? "—"}</td>
                   <td className="py-2 text-right">
-                    <button onClick={() => handleDelete(g.id)} className="text-xs text-red-600 hover:underline">
+                    <button onClick={() => handleDelete(g.id)} className="btn-danger-ghost">
                       Delete
                     </button>
                   </td>

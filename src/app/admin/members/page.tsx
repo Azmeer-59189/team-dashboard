@@ -1,8 +1,10 @@
 "use client";
 
+import PageHeader from "@/components/PageHeader";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { Icon } from "@/components/icons";
 
 type Department = { id: string; name: string };
 type Member = {
@@ -166,11 +168,15 @@ export default function MembersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-xl font-semibold text-ink">Members</h1>
+      <PageHeader eyebrow="Organization" title="Members" description="Create accounts, import in bulk, and manage access for your team." />
 
-      <form onSubmit={handleAdd} className="card grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <form onSubmit={handleAdd} className="card grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="sm:col-span-2 lg:col-span-3">
+          <h2 className="card-title">Add a member</h2>
+          <p className="card-subtitle">They can sign in straight away with the temporary password.</p>
+        </div>
         <div>
-          <label className="mb-1 block text-sm font-medium">Full name</label>
+          <label className="label">Full name</label>
           <input
             className="input"
             required
@@ -179,7 +185,7 @@ export default function MembersPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium">Email</label>
+          <label className="label">Email</label>
           <input
             type="email"
             className="input"
@@ -189,7 +195,7 @@ export default function MembersPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium">Temp password</label>
+          <label className="label">Temp password</label>
           <input
             className="input"
             required
@@ -199,7 +205,7 @@ export default function MembersPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium">Job title (optional)</label>
+          <label className="label">Job title (optional)</label>
           <input
             className="input"
             value={form.job_title}
@@ -209,7 +215,7 @@ export default function MembersPage() {
         </div>
         {!isLead && (
           <div>
-            <label className="mb-1 block text-sm font-medium">Role</label>
+            <label className="label">Role</label>
             <select
               className="input"
               value={form.role}
@@ -223,7 +229,7 @@ export default function MembersPage() {
         )}
         {!isLead && (
           <div>
-            <label className="mb-1 block text-sm font-medium">Department</label>
+            <label className="label">Department</label>
             <select
               className="input"
               value={form.department_id}
@@ -238,36 +244,44 @@ export default function MembersPage() {
             </select>
           </div>
         )}
-        <div className="sm:col-span-2 lg:col-span-5">
+        <div className="flex justify-end sm:col-span-2 lg:col-span-3">
           <button type="submit" disabled={loading} className="btn-primary">
+            <Icon name="plus" size={16} />
             {loading ? "Creating..." : "Create member"}
           </button>
         </div>
       </form>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="alert-error">{error}</p>}
 
       <div className="card space-y-3">
         <div>
-          <h2 className="font-display font-semibold text-ink">Bulk import (CSV)</h2>
-          <p className="text-xs text-muted">
+          <h2 className="card-title">Bulk import (CSV)</h2>
+          <p className="card-subtitle leading-5">
             Columns: <code>full_name,email,password,department,role,job_title</code> (department, role, and job_title are optional —
             {isLead ? " everyone is added to your department as a member regardless of these columns." : " role defaults to member; department must match an existing department name exactly."}
           </p>
         </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv,text/csv"
-          onChange={handleCsvUpload}
-          disabled={bulkLoading}
-          className="text-sm"
-        />
+        <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/60 px-6 py-7 text-center transition hover:border-brand-300 hover:bg-brand-50/50">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+            <Icon name="upload" size={18} />
+          </span>
+          <span className="text-sm font-semibold text-ink">Choose a CSV file to import</span>
+          <span className="text-xs text-muted">Rows are created one by one; results appear below.</span>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            onChange={handleCsvUpload}
+            disabled={bulkLoading}
+            className="sr-only"
+          />
+        </label>
         {bulkLoading && <p className="text-sm text-muted">Importing...</p>}
         {bulkResults && (
-          <div className="max-h-64 overflow-y-auto rounded-lg border border-hairline">
+          <div className="card max-h-64 overflow-y-auto !p-2 !shadow-none">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-hairline bg-gray-50 text-muted">
+                <tr>
                   <th className="px-2 py-1">Row</th>
                   <th className="px-2 py-1">Email</th>
                   <th className="px-2 py-1">Result</th>
@@ -278,7 +292,7 @@ export default function MembersPage() {
                   <tr key={r.row} className="border-b border-hairline/60">
                     <td className="px-2 py-1">{r.row}</td>
                     <td className="px-2 py-1">{r.email}</td>
-                    <td className={`px-2 py-1 ${r.ok ? "text-green-600" : "text-red-600"}`}>
+                    <td className={`px-2 py-1 font-medium ${r.ok ? "text-positive" : "text-danger"}`}>
                       {r.ok ? "Created" : r.error}
                     </td>
                   </tr>
@@ -305,24 +319,39 @@ export default function MembersPage() {
             {members.map((m) => (
               <tr key={m.id} className="border-b border-hairline/60">
                 <td className="py-2">
-                  <Link href={`/admin/members/${m.id}`} className="text-brand-600 hover:underline">
+                  <Link href={`/admin/members/${m.id}`} className="flex items-center gap-2.5 whitespace-nowrap font-semibold text-ink hover:text-brand-600">
+                    <span aria-hidden="true" className="avatar h-8 w-8 text-xs">
+                      {m.full_name.charAt(0).toUpperCase()}
+                    </span>
                     {m.full_name}
                   </Link>
                 </td>
                 <td className="py-2 text-muted">{m.job_title ?? "—"}</td>
-                <td className="py-2">{m.email}</td>
-                <td className="py-2 capitalize">{m.role}</td>
+                <td className="py-2 text-slate-600">{m.email}</td>
+                <td className="py-2">
+                  <span
+                    className={`badge capitalize ring-1 ring-inset ${
+                      m.role === "admin"
+                        ? "bg-brand-50 text-brand-700 ring-brand-600/15"
+                        : m.role === "lead"
+                        ? "bg-violet-50 text-violet-700 ring-violet-600/15"
+                        : "bg-slate-100 text-slate-600 ring-slate-500/10"
+                    }`}
+                  >
+                    {m.role}
+                  </span>
+                </td>
                 <td className="py-2">{m.departments?.name ?? "—"}</td>
-                <td className="py-2 text-right space-x-3">
+                <td className="whitespace-nowrap py-2 text-right">
                   <button
                     onClick={() => handleResetPassword(m.id, m.full_name)}
-                    className="text-xs text-brand-600 hover:underline"
+                    className="btn-ghost"
                   >
                     Reset password
                   </button>
                   <button
                     onClick={() => handleRemove(m.id)}
-                    className="text-xs text-red-600 hover:underline"
+                    className="btn-danger-ghost"
                   >
                     Remove
                   </button>

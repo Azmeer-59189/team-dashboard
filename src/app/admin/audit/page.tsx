@@ -1,3 +1,4 @@
+import PageHeader from "@/components/PageHeader";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
@@ -22,11 +23,8 @@ export default async function AuditLogPage() {
   });
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="font-display text-xl font-semibold text-ink">Audit Log</h1>
-        <p className="text-sm text-muted">Who added or removed which department or member, most recent first.</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader eyebrow="Organization" title="Audit Log" description={<>Who added or removed which department or member, most recent first.</>} />
 
       <div className="card">
         <table className="w-full text-left text-sm">

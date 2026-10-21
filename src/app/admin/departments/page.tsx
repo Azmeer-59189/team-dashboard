@@ -1,5 +1,6 @@
 "use client";
 
+import PageHeader from "@/components/PageHeader";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 
@@ -60,12 +61,12 @@ export default function DepartmentsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-xl font-semibold text-ink">Departments</h1>
+      <PageHeader eyebrow="Organization" title="Departments" description="Departments group members, goals, and objectives. Deleting one keeps task history but unlinks it." />
 
       {isAdmin && (
         <form onSubmit={handleAdd} className="card flex items-end gap-3">
           <div className="flex-1">
-            <label className="mb-1 block text-sm font-medium">New department name</label>
+            <label className="label">New department name</label>
             <input
               className="input"
               value={name}
@@ -79,7 +80,7 @@ export default function DepartmentsPage() {
           </button>
         </form>
       )}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="alert-error">{error}</p>}
 
       <div className="card">
         <table className="w-full text-left text-sm">
@@ -97,7 +98,7 @@ export default function DepartmentsPage() {
                   <td className="py-2 text-right">
                     <button
                       onClick={() => handleDelete(d.id)}
-                      className="text-xs text-red-600 hover:underline"
+                      className="btn-danger-ghost"
                     >
                       Delete
                     </button>

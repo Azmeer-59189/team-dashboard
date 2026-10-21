@@ -1,3 +1,4 @@
+import PageHeader from "@/components/PageHeader";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { formatTask } from "@/lib/format";
@@ -8,6 +9,8 @@ import StatCard from "@/components/StatCard";
 import ProgressBar from "@/components/ProgressBar";
 import StatusPieChart from "@/components/StatusPieChart";
 import TrendChart from "@/components/TrendChart";
+import { Icon } from "@/components/icons";
+import Link from "next/link";
 
 export default async function MemberDashboard() {
   const session = await getSession();
@@ -59,49 +62,64 @@ export default async function MemberDashboard() {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, value]) => ({ date, value }));
 
+  const periodLabel = (p: string) => (p === "WEEKLY" ? "This week" : p === "ANNUAL" ? "This year" : "This month");
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-xl font-semibold text-ink">Welcome, {session!.user.name}</h1>
-        <p className="text-sm text-muted">Log today's work below.</p>
-      </div>
+      <PageHeader
+        eyebrow="My dashboard"
+        title={<>Welcome back, {session!.user.name?.split(" ")[0]}</>}
+        description="Log today's work and keep an eye on your goals."
+      />
 
-      <StatCard hero label="Tasks done this month" value={doneThisMonth} trend={heroTrend} />
-
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
-        <StatCard tone="sky" label="Total tasks logged" value={totalCount} />
-        <StatCard tone="mint" label="Tasks done (all time)" value={doneCount} />
-      </div>
-
-      {goals.length > 0 && (
-        <div className="card space-y-3">
-          <h2 className="font-display font-semibold text-ink">Your KPI</h2>
-          {goals.map((g) => (
-            <ProgressBar
-              key={g.period}
-              label={g.period === "WEEKLY" ? "This week" : g.period === "ANNUAL" ? "This year" : "This month"}
-              progress={g.progress}
-              target={g.target}
-            />
-          ))}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <StatCard hero label="Tasks done this month" value={doneThisMonth} trend={heroTrend} hint={`${doneLastMonth} last month`} />
+        <div className="grid grid-cols-2 gap-4 lg:col-span-2">
+          <StatCard tone="violet" icon="list" label="Total tasks logged" value={totalCount} />
+          <StatCard tone="mint" label="Done (all time)" value={doneCount} />
+          <StatCard tone="sand" label="Pending" value={pendingCount} />
+          <StatCard tone="sky" label="In progress" value={inProgressCount} />
         </div>
-      )}
+      </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="card">
-          <h2 className="mb-2 font-display font-semibold text-ink">Your task status</h2>
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+          <TaskForm />
+        </div>
+        <div className="card space-y-5 lg:col-span-2">
+          <div>
+            <h2 className="card-title">Your KPI goals</h2>
+            <p className="card-subtitle">Done tasks against your targets</p>
+          </div>
+          {goals.length > 0 ? (
+            goals.map((g) => (
+              <ProgressBar key={g.period} label={periodLabel(g.period)} progress={g.progress} target={g.target} />
+            ))
+          ) : (
+            <p className="text-sm text-muted">No goals have been set for you yet.</p>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        <div className="card lg:col-span-2">
+          <h2 className="card-title mb-5">Your task status</h2>
           <StatusPieChart pending={pendingCount} inProgress={inProgressCount} done={doneCount} />
         </div>
-        <div className="card">
-          <h2 className="mb-2 font-display font-semibold text-ink">Last 30 days</h2>
+        <div className="card lg:col-span-3">
+          <h2 className="card-title">Last 30 days</h2>
+          <p className="card-subtitle mb-5">Tasks logged per day</p>
           <TrendChart data={trendData} />
         </div>
       </div>
 
-      <TaskForm />
-
       <div className="card">
-        <h2 className="mb-3 font-display font-semibold text-ink">Recent tasks</h2>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="card-title">Recent tasks</h2>
+          <Link href="/member/tasks" className="btn-ghost">
+            View all <Icon name="arrow-right" size={14} />
+          </Link>
+        </div>
         <TaskTable tasks={tasks.map(formatTask)} editable />
       </div>
     </div>

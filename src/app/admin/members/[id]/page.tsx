@@ -1,3 +1,4 @@
+import PageHeader from "@/components/PageHeader";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getScope } from "@/lib/scope";
@@ -34,13 +35,7 @@ export default async function MemberDetailPage({ params }: { params: { id: strin
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-xl font-semibold text-ink">{user.fullName}</h1>
-        <p className="text-sm text-muted">
-          {user.jobTitle && <>{user.jobTitle} · </>}
-          {user.email} · {user.department?.name ?? "No department"}
-        </p>
-      </div>
+      <PageHeader eyebrow="Member profile" title={<>{user.fullName}</>} description={<>{user.jobTitle && <>{user.jobTitle} · </>} {user.email} · {user.department?.name ?? "No department"}</>} />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <StatCard tone="sky" label="Total tasks" value={total} />
@@ -49,7 +44,7 @@ export default async function MemberDetailPage({ params }: { params: { id: strin
       </div>
 
       <div className="card">
-        <h2 className="mb-3 font-display font-semibold text-ink">Composite KPI score (this month)</h2>
+        <h2 className="card-title mb-4">Composite KPI score (this month)</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatCard
             label="Core (automatic KPIs)"
@@ -73,7 +68,7 @@ export default async function MemberDetailPage({ params }: { params: { id: strin
       </div>
 
       <div className="card space-y-4">
-        <h2 className="font-display font-semibold text-ink">Manual scores (Behavioural)</h2>
+        <h2 className="card-title">Manual scores (Behavioural)</h2>
         <p className="text-xs text-muted">
           Add a separate 0–10 rating for each competency you want to assess. This person's entries for the selected
           month are averaged equally and contribute to Behavioural; notes provide context but do not change the score.
@@ -93,7 +88,7 @@ export default async function MemberDetailPage({ params }: { params: { id: strin
       </div>
 
       <div className="card">
-        <h2 className="mb-3 font-display font-semibold text-ink">Task history</h2>
+        <h2 className="card-title mb-4">Task history</h2>
         <TaskTable tasks={tasks.map((t) => formatTask(t))} />
       </div>
     </div>
