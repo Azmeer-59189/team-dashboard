@@ -187,6 +187,68 @@ h1 {
 
 ::selection { background: #e0e4ff; color: #1e1b4b; }
 
+/* ---------- Sidebar ---------- */
+/* Deep navy with a faint indigo glow at the top and a hairline highlight on the right edge. */
+.sidebar-surface {
+  background:
+    radial-gradient(120% 40% at 0% 0%, rgb(91 95 239 / 0.22), transparent 60%),
+    radial-gradient(90% 30% at 100% 100%, rgb(139 92 246 / 0.12), transparent 70%),
+    linear-gradient(180deg, #0e1430 0%, #090d22 100%);
+  box-shadow: inset -1px 0 0 rgb(255 255 255 / 0.06);
+}
+.sidebar-logo {
+  background: linear-gradient(135deg, #8b8ff9 0%, #5b5fef 50%, #4338ca 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.25), 0 8px 20px -6px rgb(91 95 239 / 0.7);
+}
+
+/* Nav items: soft hover wash; glassy active state with a glowing indicator line. */
+.sidebar-item {
+  transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+.sidebar-item:not(.sidebar-item-active):hover {
+  background: rgb(255 255 255 / 0.045);
+}
+.sidebar-item-active {
+  background: linear-gradient(90deg, rgb(124 130 247 / 0.22) 0%, rgb(124 130 247 / 0.06) 100%);
+  box-shadow: inset 0 0 0 1px rgb(165 170 255 / 0.14), 0 6px 18px -10px rgb(91 95 239 / 0.8);
+}
+.sidebar-indicator {
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  height: 20px;
+  width: 3px;
+  transform: translateY(-50%);
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(180deg, #a5b4fc, #7c82f7);
+  box-shadow: 0 0 12px 1px rgb(124 130 247 / 0.8);
+}
+
+/* Profile card at the bottom. */
+.sidebar-profile {
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+.sidebar-avatar {
+  background: linear-gradient(135deg, #7c82f7, #a855f7);
+  box-shadow: 0 0 0 2px #0b1027, 0 0 0 3.5px rgb(165 170 255 / 0.35);
+}
+
+/* Scroll area: no visible scrollbar until hovered, then a thin translucent thumb.
+   Items fade out at the top and bottom edges instead of being cut off. */
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  mask-image: linear-gradient(to bottom, transparent 0, black 14px, black calc(100% - 18px), transparent 100%);
+}
+.sidebar-scroll:hover {
+  scrollbar-color: rgb(255 255 255 / 0.14) transparent;
+}
+.sidebar-scroll::-webkit-scrollbar { width: 6px; }
+.sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+.sidebar-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: 999px; }
+.sidebar-scroll:hover::-webkit-scrollbar-thumb { background: rgb(255 255 255 / 0.14); }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }

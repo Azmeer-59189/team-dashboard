@@ -128,32 +128,32 @@ export default function Sidebar({
   const initial = name.trim().charAt(0).toUpperCase() || "U";
   const groups = navGroups(role);
 
+  const iconButton =
+    "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-white/[0.07] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60";
+
   // `compact` = icon-only rail (desktop collapsed); the mobile drawer is always full width
   function renderPanel(compact: boolean, onClose?: () => void) {
-    const itemBase =
-      "group flex items-center gap-3 rounded-xl px-3 py-2 text-[13.5px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400";
     return (
-      <div className="flex h-full flex-col">
-        <div className={`flex items-center px-4 pb-4 pt-5 ${compact ? "flex-col gap-3" : "justify-between gap-2"}`}>
-          <Link href={role === "member" ? "/member" : "/admin"} className="flex min-w-0 items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-lift">
-              <Icon name="activity" size={18} />
+      <div className="sidebar-surface relative flex h-full flex-col overflow-hidden">
+        {/* Brand */}
+        <div className={`flex items-center px-4 pb-5 pt-6 ${compact ? "flex-col gap-4" : "justify-between gap-2"}`}>
+          <Link
+            href={role === "member" ? "/member" : "/admin"}
+            className="flex min-w-0 items-center gap-3 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
+          >
+            <span className="sidebar-logo flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white">
+              <Icon name="activity" size={19} />
             </span>
             {!compact && (
               <span className="min-w-0">
                 <span className="block truncate font-display text-[15px] font-bold tracking-tight text-white">Team Dashboard</span>
-                <span className="block truncate text-[11px] text-slate-400">Team performance</span>
+                <span className="mt-0.5 block truncate text-[11px] font-medium text-slate-400">Performance workspace</span>
               </span>
             )}
           </Link>
           {onClose ? (
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close menu"
-              className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
-            >
-              <Icon name="x" />
+            <button type="button" onClick={onClose} aria-label="Close menu" className={iconButton}>
+              <Icon name="x" size={18} />
             </button>
           ) : (
             <button
@@ -162,22 +162,25 @@ export default function Sidebar({
               aria-expanded={!compact}
               aria-label={compact ? "Expand sidebar" : "Collapse sidebar"}
               title={compact ? "Expand sidebar" : "Collapse sidebar"}
-              className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+              className={iconButton}
             >
-              <Icon name={compact ? "chevron-right" : "chevron-left"} size={18} />
+              <Icon name={compact ? "chevron-right" : "chevron-left"} size={16} />
             </button>
           )}
         </div>
 
-        <nav aria-label="Main navigation" className="flex-1 space-y-5 overflow-y-auto px-3 pb-4">
-          {groups.map((group) => (
+        <div className="mx-4 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+        {/* Navigation: thin scrollbar only on hover, soft fades at the edges */}
+        <nav aria-label="Main navigation" className="sidebar-scroll flex-1 space-y-6 overflow-y-auto px-3 py-5">
+          {groups.map((group, i) => (
             <div key={group.title}>
               {compact ? (
-                <div className="mx-3 mb-2 border-t border-white/5" />
+                i > 0 && <div className="mx-auto mb-2 h-px w-6 bg-white/10" />
               ) : (
-                <p className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">{group.title}</p>
+                <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">{group.title}</p>
               )}
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 {group.links.map((link) => {
                   const active = isActive(link.href);
                   return (
@@ -187,13 +190,16 @@ export default function Sidebar({
                       aria-label={compact ? link.label : undefined}
                       aria-current={active ? "page" : undefined}
                       title={compact ? link.label : undefined}
-                      className={`${itemBase} ${compact ? "justify-center" : ""} ${
-                        active
-                          ? "bg-brand-500 text-white shadow-lift"
-                          : "text-slate-400 hover:bg-white/[0.06] hover:text-white"
-                      }`}
+                      className={`sidebar-item group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13.5px] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60 ${
+                        compact ? "justify-center" : ""
+                      } ${active ? "sidebar-item-active text-white" : "text-slate-400 hover:text-slate-100"}`}
                     >
-                      <Icon name={link.icon} size={18} />
+                      {active && <span aria-hidden="true" className="sidebar-indicator" />}
+                      <span
+                        className={`transition-colors ${active ? "text-brand-200" : "text-slate-500 group-hover:text-slate-300"}`}
+                      >
+                        <Icon name={link.icon} size={18} />
+                      </span>
                       {!compact && <span className="truncate">{link.label}</span>}
                     </Link>
                   );
@@ -203,7 +209,8 @@ export default function Sidebar({
           ))}
         </nav>
 
-        <div className="space-y-1 border-t border-white/5 p-3">
+        {/* Footer */}
+        <div className="space-y-2 p-3">
           {DEMO_MODE && role === "admin" && (
             <button
               type="button"
@@ -211,48 +218,39 @@ export default function Sidebar({
               disabled={resetting}
               aria-label={compact ? "Reset demo data" : undefined}
               title={compact ? "Reset demo data" : undefined}
-              className={`${itemBase} w-full text-slate-400 hover:bg-white/[0.06] hover:text-white disabled:opacity-50 ${
+              className={`sidebar-item flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium text-slate-400 hover:text-white disabled:opacity-50 ${
                 compact ? "justify-center" : ""
               }`}
             >
-              <Icon name="refresh" size={18} />
+              <Icon name="refresh" size={17} />
               {!compact && <span>{resetting ? "Resetting..." : "Reset demo data"}</span>}
             </button>
           )}
           {resetMsg && !compact && <p className="px-3 text-xs text-slate-400">{resetMsg}</p>}
-          <div className={`flex items-center gap-3 rounded-xl bg-white/[0.04] p-2.5 ${compact ? "justify-center" : ""}`}>
-            <span aria-hidden="true" className="avatar h-9 w-9 bg-brand-500/20 text-sm text-brand-200">
+
+          <div className={`sidebar-profile flex items-center gap-3 rounded-2xl p-2.5 ${compact ? "flex-col" : ""}`}>
+            <span
+              aria-hidden="true"
+              className="sidebar-avatar flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-display text-sm font-bold text-white"
+            >
               {initial}
             </span>
             {!compact && (
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-white">{name}</p>
+                <p className="truncate text-[13px] font-semibold text-white">{name}</p>
                 <p className="truncate text-[11px] text-slate-400">{ROLE_LABELS[role]}</p>
               </div>
             )}
-            {!compact && (
-              <button
-                type="button"
-                onClick={() => signOut({ callbackUrl: "/login" })}
-                aria-label="Log out"
-                title="Log out"
-                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
-              >
-                <Icon name="log-out" size={18} />
-              </button>
-            )}
-          </div>
-          {compact && (
             <button
               type="button"
               onClick={() => signOut({ callbackUrl: "/login" })}
               aria-label="Log out"
               title="Log out"
-              className={`${itemBase} w-full justify-center text-slate-400 hover:bg-white/[0.06] hover:text-white`}
+              className={iconButton}
             >
-              <Icon name="log-out" size={18} />
+              <Icon name="log-out" size={17} />
             </button>
-          )}
+          </div>
         </div>
       </div>
     );
@@ -263,7 +261,7 @@ export default function Sidebar({
       {/* Mobile / tablet: slim top bar with a menu button */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-hairline bg-white/85 px-4 py-3 backdrop-blur lg:hidden">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-400 to-brand-600 text-white">
+          <span className="sidebar-logo flex h-8 w-8 items-center justify-center rounded-lg text-white">
             <Icon name="activity" size={16} />
           </span>
           <span className="font-display text-[15px] font-bold tracking-tight text-ink">Team Dashboard</span>
@@ -282,7 +280,7 @@ export default function Sidebar({
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
           <div className="absolute inset-0 bg-night-950/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 w-72 max-w-[85vw] bg-night-950 shadow-2xl">
+          <aside className="absolute inset-y-0 left-0 w-72 max-w-[85vw] shadow-2xl">
             {renderPanel(false, () => setMobileOpen(false))}
           </aside>
         </div>
@@ -290,8 +288,8 @@ export default function Sidebar({
 
       {/* Desktop: sticky full-height sidebar, collapsible to an icon rail */}
       <aside
-        className={`sticky top-0 hidden h-screen shrink-0 self-start bg-night-950 transition-[width] duration-200 lg:block ${
-          collapsed ? "w-[76px]" : "w-64"
+        className={`sticky top-0 hidden h-screen shrink-0 self-start transition-[width] duration-300 ease-out lg:block ${
+          collapsed ? "w-[80px]" : "w-[264px]"
         }`}
       >
         {renderPanel(collapsed)}
