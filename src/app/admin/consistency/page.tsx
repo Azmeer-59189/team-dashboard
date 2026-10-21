@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getScope } from "@/lib/scope";
 import ProgressBar from "@/components/ProgressBar";
-import { windowStart } from "@/lib/dates";
+import { windowStart, todayInTimeZone } from "@/lib/dates";
 
 const WINDOW_DAYS = 30;
 
@@ -19,7 +19,7 @@ export default async function ConsistencyPage({
 
   const members = await prisma.user.findMany({
     where: {
-      role: { in: ["MEMBER", "LEAD"] },
+      archivedAt: null, role: { in: ["MEMBER", "LEAD"] },
       ...(scope.isLead
         ? { departmentId: scope.departmentId }
         : searchParams.department
@@ -33,7 +33,7 @@ export default async function ConsistencyPage({
   // One grouped query for everyone: each (user, day) pair with at least one task is an active day.
   const activeDays = await prisma.task.groupBy({
     by: ["userId", "taskDate"],
-    where: { userId: { in: members.map((m) => m.id) }, taskDate: { gte: windowStart(WINDOW_DAYS) } },
+    where: { userId: { in: members.map((m) => m.id) }, taskDate: { gte: windowStart(WINDOW_DAYS), lte: todayInTimeZone() } },
   });
   const daysByUser = new Map<string, number>();
   for (const d of activeDays) daysByUser.set(d.userId, (daysByUser.get(d.userId) ?? 0) + 1);

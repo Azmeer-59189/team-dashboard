@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { formatTask } from "@/lib/format";
 import { getMemberGoalProgress, getPeriodRange } from "@/lib/goals";
-import { windowStart } from "@/lib/dates";
+import { windowStart, todayInTimeZone } from "@/lib/dates";
 import TaskForm from "@/components/TaskForm";
 import TaskTable from "@/components/TaskTable";
 import StatCard from "@/components/StatCard";
@@ -37,7 +37,7 @@ export default async function MemberDashboard() {
       prisma.task.count({ where: { userId } }),
       getMemberGoalProgress(userId, session!.user.departmentId),
       prisma.task.findMany({
-        where: { userId, taskDate: { gte: thirtyDaysAgo } },
+        where: { userId, taskDate: { gte: thirtyDaysAgo, lte: todayInTimeZone() } },
         select: { taskDate: true },
       }),
       prisma.task.count({ where: { userId, status: "DONE", taskDate: { gte: thisMonth.start, lte: thisMonth.end } } }),

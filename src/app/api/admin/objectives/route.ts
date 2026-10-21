@@ -1,10 +1,13 @@
+import { serializable } from "@/lib/transaction";
+import { audit } from "@/lib/audit";
+import { validateObjectiveInput } from "@/lib/input";
+import { readJson } from "@/lib/request";
 import { NextResponse } from "next/server";
 import { serverError } from "@/lib/apiError";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getScope, canManage } from "@/lib/scope";
-import { getObjectiveProgress } from "@/lib/objectives";
-import { logAudit } from "@/lib/audit";
+import { getObjectivesProgress } from "@/lib/objectives";
 
 export async function GET() {
   const session = await getSession();
@@ -18,12 +21,9 @@ export async function GET() {
     orderBy: { createdAt: "asc" },
   });
 
-  const withProgress = await Promise.all(
-    objectives.map(async (o) => ({
-      ...(await getObjectiveProgress(o.id))!,
-      departmentName: o.department.name,
-    }))
-  );
+  const progress = await getObjectivesProgress({ id: { in: objectives.map((o) => o.id) } });
+  const byId = new Map(progress.map((p) => [p.id, p]));
+  const withProgress = objectives.map((o) => ({ ...byId.get(o.id)!, departmentName: o.department.name }));
 
   return NextResponse.json({ objectives: withProgress });
 }
@@ -34,7 +34,11 @@ export async function POST(request: Request) {
   const scope = getScope(session);
   if (!canManage(scope)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { departmentId, title, description, targetTaskCount } = await request.json();
+  const body = await readJson(request);
+  if (body instanceof NextResponse) return body;
+  const validationError = validateObjectiveInput(body);
+  if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
+  const { departmentId, title, description, targetTaskCount } = body;
 
   if (!title || typeof title !== "string" || !title.trim()) {
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
@@ -55,7 +59,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const objective = await prisma.objective.create({
+    const objective = await serializable(async (tx) => {
+    const objective = await tx.objective.create({
       data: {
         departmentId: finalDepartmentId,
         title: title.trim(),
@@ -63,11 +68,9 @@ export async function POST(request: Request) {
         targetTaskCount: targetTaskCount ? Number(targetTaskCount) : null,
       },
     });
-    await logAudit(
-      { id: session.user.id, name: session.user.name ?? session.user.email ?? "Admin" },
-      "objective.create",
-      objective.title
-    );
+      await audit(tx, { id: session.user.id, name: session.user.name ?? "Manager" }, "objective.create", objective.id, objective.title, { after: objective });
+      return objective;
+    });
     return NextResponse.json({ objective });
   } catch (err: any) {
     return serverError(err);

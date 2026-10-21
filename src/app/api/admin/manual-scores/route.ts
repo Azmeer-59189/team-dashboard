@@ -1,9 +1,14 @@
+import { validateRatingInput } from "@/lib/input";
+import { serializable, BusinessError } from "@/lib/transaction";
+import { assertMonthsOpen } from "@/lib/reports";
+import { ratingKey } from "@/lib/ratings";
+import { audit } from "@/lib/audit";
+import { readJson } from "@/lib/request";
 import { NextResponse } from "next/server";
 import { serverError } from "@/lib/apiError";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getScope, canManage, canManageUser } from "@/lib/scope";
-import { logAudit } from "@/lib/audit";
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -11,21 +16,13 @@ export async function POST(request: Request) {
   const scope = getScope(session);
   if (!canManage(scope)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { userId, competency, score, periodLabel, notes } = await request.json();
+  const body = await readJson(request);
+  if (body instanceof NextResponse) return body;
+  const { userId, competency, score, periodLabel, notes } = body;
 
-  if (!userId || !competency || score === undefined || score === null || !periodLabel) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-  }
+  const validationError = validateRatingInput(body);
+  if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
   const numericScore = Number(score);
-  if (!Number.isFinite(numericScore) || numericScore < 0 || numericScore > 10) {
-    return NextResponse.json({ error: "Score must be between 0 and 10" }, { status: 400 });
-  }
-  if (typeof competency !== "string" || competency.trim().length === 0 || competency.trim().length > 100) {
-    return NextResponse.json({ error: "Competency must be 1-100 characters" }, { status: 400 });
-  }
-  if (!/^\d{4}-\d{2}$/.test(periodLabel)) {
-    return NextResponse.json({ error: "Period must be in YYYY-MM format" }, { status: 400 });
-  }
 
   const target = await prisma.user.findUnique({ where: { id: userId } });
   if (!target) return NextResponse.json({ error: "Member not found" }, { status: 404 });
@@ -37,22 +34,23 @@ export async function POST(request: Request) {
   }
 
   try {
-    const entry = await prisma.manualScore.create({
-      data: {
-        userId,
-        scorerId: session.user.id,
-        scorerName: session.user.name ?? session.user.email ?? "Manager",
-        competency: competency.trim(),
-        score: numericScore,
-        periodLabel,
-        notes: notes || null,
-      },
+    const entry = await serializable(async (tx) => {
+      const currentTarget = await tx.user.findUnique({ where: { id: userId } });
+      if (!currentTarget || currentTarget.archivedAt || !canManageUser(scope, currentTarget)) throw new BusinessError("Forbidden", 403);
+      await assertMonthsOpen(tx, [periodLabel]);
+      const key = ratingKey(userId, periodLabel, competency, session.user.id);
+      const before = await tx.manualScore.findUnique({ where: { ratingKey: key } })
+        ?? await tx.manualScore.findFirst({ where: { userId, periodLabel, scorerId: session.user.id, supersededAt: null,
+          competency: { equals: competency.trim(), mode: "insensitive" } }, orderBy: [{ createdAt: "desc" }, { id: "desc" }] });
+      const data = { userId, scorerId: session.user.id, scorerName: session.user.name ?? "Manager",
+        competency: competency.trim(), score: numericScore, periodLabel, notes: notes || null, supersededAt: null };
+      const saved = before
+        ? await tx.manualScore.update({ where: { id: before.id }, data: { ...data, ratingKey: key } })
+        : await tx.manualScore.create({ data: { ...data, ratingKey: key } });
+      await audit(tx, { id: session.user.id, name: session.user.name ?? "Manager" }, before ? "manual_score.update" : "manual_score.create",
+        saved.id, `${currentTarget.fullName} - ${competency.trim()} (${periodLabel})`, { before, after: saved });
+      return saved;
     });
-    await logAudit(
-      { id: session.user.id, name: session.user.name ?? session.user.email ?? "Admin" },
-      "manual_score.create",
-      `${target.fullName} - ${competency.trim()} (${periodLabel})`
-    );
     return NextResponse.json({ entry });
   } catch (err: any) {
     return serverError(err);

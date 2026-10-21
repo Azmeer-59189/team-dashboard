@@ -12,7 +12,7 @@ The **Composite KPI Score** is a separate monthly view for each individual. It c
 
 ## What a manager needs to do
 
-1. Set up the relevant goals for the department or person. A department goal is the default; a person's individual goal takes precedence for that period. For the Composite Score, only the applicable monthly Core goal is currently used; the goal form's category and weight settings do not alter its calculation.
+1. Set up the relevant goals for the department or person. A department goal is the default; a person's individual goal takes precedence for that period. For the Composite Score, only the applicable monthly Core goal is currently used; the individual override is resolved before its category is checked. If that override is Behavioural, no departmental Core goal is substituted. Goal weight settings do not alter the calculation.
 2. Keep tasks up to date. A task counts toward goal progress when it is marked done and its task date falls within the period.
 3. If you want a Behavioural component, open **Members**, select the person, and add one or more **Manual scores** on their profile. Choose a competency, enter a score from 0 to 10, select the month, and optionally add notes. The app does not create this assessment for you.
 4. Review the person's Core, Behavioural, Overall, and rating label on the Composite KPI Scores page.
@@ -96,3 +96,13 @@ If only one component exists, Overall equals that component; if neither exists, 
 | Objective progress | `src/lib/objectives.ts` |
 | Composite score and rating labels | `src/lib/compositeScore.ts` |
 | Consistency | `src/app/admin/consistency/page.tsx` |
+
+## Historical records and finalized months
+
+Goals now keep dated revisions. Changes apply to the current period by default; the backend also supports scheduling future period targets. An individual override is resolved consistently in KPI Progress, Objectives and Composite Scores. A Behavioural override suppresses the departmental Core fallback.
+
+A reviewer submitting the same competency for the same member and month updates that assessment. Different reviewers contribute separate, equally weighted entries. Competency matching ignores casing and surrounding spaces.
+
+Administrators can finalize past months through the reporting API described in [BACKEND.md](./BACKEND.md). Finalized scores retain their evidence and no longer recalculate; task and assessment mutations for closed months are rejected. Account deactivation retains work and assessment history. Completion timestamps are recorded separately; KPI counts continue to use task dates.
+
+The migration provides an initial baseline of existing targets and assignments. It cannot reconstruct information overwritten before history tracking began.

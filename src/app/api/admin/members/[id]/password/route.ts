@@ -1,9 +1,13 @@
+import { isPassword } from "@/lib/input";
+import { serializable, BusinessError } from "@/lib/transaction";
+import { audit } from "@/lib/audit";
+import { serverError } from "@/lib/apiError";
+import { readJson } from "@/lib/request";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getScope, canManage, canManageUser } from "@/lib/scope";
-import { logAudit } from "@/lib/audit";
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   const session = await getSession();
@@ -11,9 +15,11 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   const scope = getScope(session);
   if (!canManage(scope)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { newPassword } = await request.json();
-  if (typeof newPassword !== "string" || newPassword.length < 6) {
-    return NextResponse.json({ error: "New password must be at least 6 characters" }, { status: 400 });
+  const body = await readJson(request);
+  if (body instanceof NextResponse) return body;
+  const { newPassword } = body;
+  if (!isPassword(newPassword)) {
+    return NextResponse.json({ error: "Password must be at least 6 characters and at most 72 UTF-8 bytes" }, { status: 400 });
   }
 
   const target = await prisma.user.findUnique({ where: { id: params.id } });
@@ -29,13 +35,14 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 
   const passwordHash = await bcrypt.hash(newPassword, 10);
-  await prisma.user.update({ where: { id: params.id }, data: { passwordHash } });
-
-  await logAudit(
-    { id: session.user.id, name: session.user.name ?? session.user.email ?? "Admin" },
-    "member.password_reset",
-    `${target.fullName} (${target.email})`
-  );
+  try {
+    await serializable(async (tx) => {
+      const current = await tx.user.findUnique({ where: { id: params.id } });
+      if (!current || current.archivedAt || !canManageUser(scope, current)) throw new BusinessError("Forbidden", 403);
+      await tx.user.update({ where: { id: params.id }, data: { passwordHash } });
+      await audit(tx, { id: session.user.id, name: session.user.name ?? "Manager" }, "member.password_reset", current.id, `${current.fullName} (${current.email})`);
+    });
+  } catch (error) { return serverError(error); }
 
   return NextResponse.json({ ok: true });
 }

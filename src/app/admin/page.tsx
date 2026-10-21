@@ -47,7 +47,7 @@ export default async function AdminOverview({
   const [departments, members] = await Promise.all([
     prisma.department.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
     prisma.user.findMany({
-      where: { role: { in: ["MEMBER", "LEAD"] }, ...(scope.isLead ? { departmentId: scope.departmentId } : {}) },
+      where: { archivedAt: null, role: { in: ["MEMBER", "LEAD"] }, ...(scope.isLead ? { departmentId: scope.departmentId } : {}) },
       select: { id: true, fullName: true, departmentId: true },
       orderBy: { fullName: "asc" },
     }),
@@ -98,7 +98,7 @@ export default async function AdminOverview({
   const pending = chartTasks.filter((t) => t.status === "PENDING").reduce((sum, t) => sum + t.count, 0);
 
   const [memberCount, deptCount] = await Promise.all([
-    prisma.user.count({ where: { role: "MEMBER", ...(scope.isLead ? { departmentId: scope.departmentId } : {}) } }),
+    prisma.user.count({ where: { archivedAt: null, role: "MEMBER", ...(scope.isLead ? { departmentId: scope.departmentId } : {}) } }),
     scope.isLead ? Promise.resolve(1) : prisma.department.count(),
   ]);
 

@@ -1,8 +1,10 @@
+import { serializable } from "@/lib/transaction";
+import { audit } from "@/lib/audit";
+import { readJson } from "@/lib/request";
 import { NextResponse } from "next/server";
 import { serverError } from "@/lib/apiError";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { logAudit } from "@/lib/audit";
 
 export async function GET() {
   const session = await getSession();
@@ -22,7 +24,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { name } = await request.json();
+  const body = await readJson(request);
+  if (body instanceof NextResponse) return body;
+  const { name } = body;
   if (!name || typeof name !== "string" || !name.trim()) {
     return NextResponse.json({ error: "Department name is required" }, { status: 400 });
   }
@@ -31,12 +35,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const department = await prisma.department.create({ data: { name: name.trim() } });
-    await logAudit(
-      { id: session.user.id, name: session.user.name ?? session.user.email ?? "Admin" },
-      "department.create",
-      department.name
-    );
+    const department = await serializable(async (tx) => {
+      const saved = await tx.department.create({ data: { name: name.trim() } });
+      await audit(tx, { id: session.user.id, name: session.user.name ?? "Admin" }, "department.create", saved.id, saved.name, { after: saved });
+      return saved;
+    });
     return NextResponse.json({ department });
   } catch (err: any) {
     if (err.code === "P2002") {

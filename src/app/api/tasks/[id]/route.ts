@@ -1,3 +1,7 @@
+import { serializable, BusinessError } from "@/lib/transaction";
+import { assertMonthsOpen } from "@/lib/reports";
+import { audit } from "@/lib/audit";
+import { readJson } from "@/lib/request";
 import { NextResponse } from "next/server";
 import { serverError } from "@/lib/apiError";
 import { prisma } from "@/lib/prisma";
@@ -18,7 +22,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   const allowed = await canModify(params.id, session.user.id, session.user.role === "ADMIN");
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const updates = await request.json().catch(() => null);
+  const updates = await readJson(request);
+  if (updates instanceof NextResponse) return updates;
   if (!updates || typeof updates !== "object" || Array.isArray(updates)) {
     return NextResponse.json({ error: "Expected a JSON object" }, { status: 400 });
   }
@@ -59,7 +64,20 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 
   try {
-    await prisma.task.update({ where: { id: params.id }, data: patch });
+    await serializable(async (tx) => {
+      const current = await tx.task.findUnique({ where: { id: params.id } });
+      if (!current) throw new BusinessError("Task not found", 404);
+      if (session.user.role !== "ADMIN" && current.userId !== session.user.id) throw new BusinessError("Forbidden", 403);
+      if (current.version !== existing.version || (updates.version !== undefined && updates.version !== current.version)) {
+        throw new BusinessError("This task changed. Refresh and try again.", 409);
+      }
+      await assertMonthsOpen(tx, [current.taskDate, patch.taskDate instanceof Date ? patch.taskDate : current.taskDate]);
+      const nextStatus = patch.status ?? current.status;
+      patch.completedAt = nextStatus === "DONE" ? (current.status === "DONE" ? current.completedAt : new Date()) : null;
+      patch.version = { increment: 1 };
+      const saved = await tx.task.update({ where: { id: current.id }, data: patch });
+      await audit(tx, { id: session.user.id, name: session.user.name ?? "Member" }, "task.update", current.id, current.content.slice(0, 100), { before: current, after: saved });
+    });
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     return serverError(err);
@@ -74,7 +92,14 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   try {
-    await prisma.task.delete({ where: { id: params.id } });
+    await serializable(async (tx) => {
+      const current = await tx.task.findUnique({ where: { id: params.id } });
+      if (!current) throw new BusinessError("Task not found", 404);
+      if (session.user.role !== "ADMIN" && current.userId !== session.user.id) throw new BusinessError("Forbidden", 403);
+      await assertMonthsOpen(tx, [current.taskDate]);
+      await tx.task.delete({ where: { id: current.id } });
+      await audit(tx, { id: session.user.id, name: session.user.name ?? "Member" }, "task.delete", current.id, current.content.slice(0, 100), { before: current });
+    });
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     return serverError(err);

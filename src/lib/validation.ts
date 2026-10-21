@@ -77,7 +77,7 @@ export function validateTaskFields(fields: {
   if (fields.delivered_date && !isValidDate(fields.delivered_date)) return "Delivered date is not a valid date";
   if (fields.revision_rounds !== undefined && fields.revision_rounds !== null && fields.revision_rounds !== "") {
     const n = Number(fields.revision_rounds);
-    if (!Number.isInteger(n) || n < 0) return "Revision rounds must be a whole number, 0 or more";
+    if (!Number.isInteger(n) || n < 0 || n > 2147483647 || (typeof fields.revision_rounds === "string" && fields.revision_rounds.trim() === "")) return "Revision rounds must be a whole number between 0 and 2147483647";
   }
   return null;
 }

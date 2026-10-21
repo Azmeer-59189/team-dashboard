@@ -1,3 +1,5 @@
+import { recordAssignment } from "./assignments";
+import { recordGoal } from "./goalHistory";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
@@ -55,6 +57,10 @@ function randomStatus(i: number) {
 
 export async function seedDemoData() {
   // wipe in FK-safe order (children before parents)
+  await prisma.userAssignment.deleteMany();
+  await prisma.monthlyReport.deleteMany();
+  await prisma.goalRevision.deleteMany();
+  await prisma.loginAttempt.deleteMany();
   await prisma.manualScore.deleteMany();
   await prisma.goal.deleteMany();
   await prisma.task.deleteMany();
@@ -210,6 +216,11 @@ export async function seedDemoData() {
     someDesignTasks.map((t) => prisma.task.update({ where: { id: t.id }, data: { objectiveId: objective.id } }))
   );
 
+  for (const user of await prisma.user.findMany()) await recordAssignment(prisma, user);
+  // Demo goals use the same history records as real accounts.
+  for (const goal of await prisma.goal.findMany()) {
+    await recordGoal(prisma, goal);
+  }
   return {
     admin: { email: "demo-admin@example.com", password: DEMO_PASSWORD },
     lead: { email: "demo-lead@example.com", password: DEMO_PASSWORD },

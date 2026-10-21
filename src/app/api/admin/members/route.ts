@@ -1,3 +1,8 @@
+import { recordAssignment } from "@/lib/assignments";
+import { serializable } from "@/lib/transaction";
+import { audit, memberSnapshot } from "@/lib/audit";
+import { validateMemberInput } from "@/lib/input";
+import { readJson } from "@/lib/request";
 import { NextResponse } from "next/server";
 import { serverError } from "@/lib/apiError";
 import bcrypt from "bcryptjs";
@@ -5,16 +10,16 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getScope, canManage } from "@/lib/scope";
 import { formatMember } from "@/lib/format";
-import { logAudit } from "@/lib/audit";
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const scope = getScope(session);
   if (!canManage(scope)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  const showArchived = scope.isAdmin && new URL(request.url).searchParams.get("archived") === "true";
   const users = await prisma.user.findMany({
-    where: scope.isLead ? { departmentId: scope.departmentId } : {},
+    where: { archivedAt: showArchived ? { not: null } : null, ...(scope.isLead ? { departmentId: scope.departmentId } : {}) },
     include: { department: { select: { name: true } } },
     orderBy: { fullName: "asc" },
   });
@@ -28,7 +33,11 @@ export async function POST(request: Request) {
   const scope = getScope(session);
   if (!canManage(scope)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { full_name, email, password, role, department_id, job_title } = await request.json();
+  const body = await readJson(request);
+  if (body instanceof NextResponse) return body;
+  const validationError = validateMemberInput(body);
+  if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
+  const { full_name, email, password, role, department_id, job_title } = body;
 
   if (!full_name || !email || !password || !role) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -71,7 +80,8 @@ export async function POST(request: Request) {
 
   try {
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({
+    await serializable(async (tx) => {
+    const user = await tx.user.create({
       data: {
         fullName: full_name.trim(),
         email: normalizedEmail,
@@ -81,11 +91,9 @@ export async function POST(request: Request) {
         jobTitle: job_title ? job_title.trim() : null,
       },
     });
-    await logAudit(
-      { id: session.user.id, name: session.user.name ?? session.user.email ?? "Admin" },
-      "member.create",
-      `${user.fullName} (${user.email})`
-    );
+    await recordAssignment(tx, user);
+    await audit(tx, { id: session.user.id, name: session.user.name ?? "Manager" }, "member.create", user.id, `${user.fullName} (${user.email})`, { after: memberSnapshot(user) });
+    });
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     if (err.code === "P2002") {

@@ -23,7 +23,7 @@ export default async function MemberDetailPage({ params }: { params: { id: strin
       where: { userId: params.id },
       orderBy: { taskDate: "desc" },
     }),
-    prisma.manualScore.findMany({ where: { userId: params.id }, orderBy: { createdAt: "desc" } }),
+    prisma.manualScore.findMany({ where: { userId: params.id, supersededAt: null }, orderBy: { createdAt: "desc" } }),
   ]);
 
   if (!user) redirect("/admin/members");

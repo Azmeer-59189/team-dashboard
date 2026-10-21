@@ -93,7 +93,7 @@ export default function MembersPage() {
   }
 
   async function handleRemove(id: string) {
-    if (!confirm("Remove this member? This deletes their login and task history.")) return;
+    if (!confirm("Deactivate this member? Login access will be disabled. Their task history and assessments will be retained.")) return;
     const res = await fetch(`/api/admin/members/${id}`, { method: "DELETE" });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));

@@ -2,7 +2,7 @@ import PageHeader from "@/components/PageHeader";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getScope } from "@/lib/scope";
-import { getCompositeScore, scoreLabel } from "@/lib/compositeScore";
+import { getCompositeScores, scoreLabel } from "@/lib/compositeScore";
 import Link from "next/link";
 
 const RATING_BADGE: Record<string, string> = {
@@ -30,7 +30,7 @@ export default async function CompositeScoresPage({
 
   const members = await prisma.user.findMany({
     where: {
-      role: { in: ["MEMBER", "LEAD"] },
+      archivedAt: null, role: { in: ["MEMBER", "LEAD"] },
       ...(scope.isLead
         ? { departmentId: scope.departmentId }
         : searchParams.department
@@ -41,9 +41,8 @@ export default async function CompositeScoresPage({
     orderBy: { fullName: "asc" },
   });
 
-  const rows = await Promise.all(
-    members.map(async (m) => ({ member: m, score: await getCompositeScore(m.id, m.departmentId) }))
-  );
+  const scores = await getCompositeScores(members);
+  const rows = members.map((member) => ({ member, score: scores.get(member.id)! }));
 
   return (
     <div className="space-y-6">

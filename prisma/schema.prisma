@@ -59,6 +59,8 @@ model User {
   fullName     String
   email        String   @unique
   passwordHash String
+  archivedAt   DateTime?
+  authVersion  Int      @default(0)
   role         Role     @default(MEMBER)
   jobTitle     String?
   departmentId String?
@@ -125,6 +127,9 @@ model ManualScore {
   score       Float
   periodLabel String // e.g. "2026-09" - the month this score applies to
   notes       String?  @db.Text
+  ratingKey   String?  @unique
+  supersededAt DateTime?
+  updatedAt   DateTime @default(now()) @updatedAt
   createdAt   DateTime @default(now())
 
   user User @relation("ScoredUser", fields: [userId], references: [id], onDelete: Cascade)
@@ -141,6 +146,8 @@ model AuditLog {
   actorName   String
   action      String
   targetLabel String
+  targetId    String?
+  details     Json?
   createdAt   DateTime @default(now())
 
   @@index([createdAt])
@@ -155,6 +162,8 @@ model Task {
   content        String        @db.Text
   taskDate       DateTime      @db.Date
   status         TaskStatus    @default(PENDING)
+  completedAt    DateTime?
+  version        Int           @default(0)
   category       String?
   chapter        String?
   campaign       String?
@@ -173,4 +182,55 @@ model Task {
   @@index([departmentId])
   @@index([taskDate])
   @@index([status])
+  @@index([userId, status, taskDate])
+  @@index([departmentId, taskDate])
+  @@index([objectiveId, status, taskDate])
+}
+
+// Immutable scope snapshots survive deleting the current goal or department.
+// The latest revision at a period's start is that period's target.
+model GoalRevision {
+  id            String       @id @default(cuid())
+  goalId        String
+  departmentId  String?
+  userId        String?
+  objectiveId   String?
+  period        GoalPeriod
+  targetCount   Int
+  category      GoalCategory
+  weight        Float
+  effectiveFrom DateTime     @db.Date
+  retired       Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+
+  @@unique([goalId, effectiveFrom])
+  @@index([period, effectiveFrom])
+}
+
+// Closed months are immutable reports; corrections to source data remain audited.
+model MonthlyReport {
+  periodLabel String   @id
+  finalizedBy String
+  finalizedAt DateTime @default(now())
+  rows        Json
+}
+
+// Shared across serverless instances; keys are hashes, never raw login emails.
+model LoginAttempt {
+  key       String   @id
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  @@index([expiresAt])
+}
+
+// Calendar-day assignment history keeps later transfers out of earlier reports.
+model UserAssignment {
+  id            String   @id @default(cuid())
+  userId        String
+  departmentId  String?
+  role          Role
+  archived      Boolean  @default(false)
+  effectiveFrom DateTime @db.Date
+  createdAt     DateTime @default(now())
+  @@unique([userId, effectiveFrom])
 }

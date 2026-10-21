@@ -1,3 +1,5 @@
+import { taskWhere } from "@/lib/taskQuery";
+import { serverError } from "@/lib/apiError";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
@@ -17,31 +19,12 @@ export async function GET(request: Request) {
   if (!canManage(scope)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { searchParams } = new URL(request.url);
-  const department = searchParams.get("department");
-  const member = searchParams.get("member");
-  const status = searchParams.get("status");
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
-
-  const where: any = {};
-  // leads are always locked to their own department, regardless of what's in the URL
-  if (scope.isLead) where.departmentId = scope.departmentId;
-  else if (department) where.departmentId = department;
-
-  if (member) where.userId = member;
-  if (status) where.status = statusToDb(status);
-  if (from || to) {
-    where.taskDate = {};
-    if (from) where.taskDate.gte = new Date(from);
-    if (to) where.taskDate.lte = new Date(to);
-  }
-
-  const tasks = await prisma.task.findMany({
-    where,
-    include: { user: { select: { fullName: true, email: true } }, department: { select: { name: true } } },
-    orderBy: { taskDate: "desc" },
-  });
-
+  let where;
+  try { where = taskWhere(searchParams, scope); }
+  catch (error) { return serverError(error); }
+  // Ignore rows created after this export started; cursor pages stay bounded in memory.
+  const startedAt = new Date();
+  where = { ...where, createdAt: { lte: startedAt } };
   const header = [
     "Date",
     "Member",
@@ -58,7 +41,25 @@ export async function GET(request: Request) {
     "Delivered Date",
     "Revision Rounds",
   ];
-  const rows = tasks.map((t) => [
+  const encoder = new TextEncoder();
+  let cursor: string | undefined;
+  let headerSent = false;
+  let cancelled = false;
+  const stream = new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      try {
+        if (!headerSent) {
+          controller.enqueue(encoder.encode(header.map(csvEscape).join(",") + "\r\n"));
+          headerSent = true;
+          return;
+        }
+        const tasks = await prisma.task.findMany({
+          where: cursor ? { AND: [where, { id: { gt: cursor } }] } : where,
+          include: { user: { select: { fullName: true, email: true } }, department: { select: { name: true } } },
+          orderBy: { id: "asc" }, take: 500,
+        });
+        if (cancelled) return;
+        const rows = tasks.map((t) => [
     t.taskDate.toISOString().slice(0, 10),
     t.user.fullName,
     t.user.email,
@@ -75,11 +76,21 @@ export async function GET(request: Request) {
     t.revisionRounds ?? "",
   ]);
 
-  const csv = [header, ...rows].map((r) => r.map((c) => csvEscape(String(c))).join(",")).join("\n");
+        if (rows.length) controller.enqueue(encoder.encode(rows.map((r) => r.map((c) => csvEscape(String(c))).join(",")).join("\r\n") + "\r\n"));
+        if (tasks.length < 500) controller.close();
+        else cursor = tasks[tasks.length - 1].id;
+      } catch (error) {
+        console.error("CSV export failed", error);
+        if (!cancelled) controller.error(new Error("Export failed. Please retry."));
+      }
+    },
+    cancel() { cancelled = true; },
+  });
 
-  return new NextResponse(csv, {
+  return new NextResponse(stream, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
+      "Cache-Control": "no-store",
       "Content-Disposition": `attachment; filename="tasks-export-${new Date().toISOString().slice(0, 10)}.csv"`,
     },
   });

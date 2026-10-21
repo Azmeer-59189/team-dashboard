@@ -1,12 +1,15 @@
+import { recordAssignment } from "@/lib/assignments";
+import { validateMemberInput } from "@/lib/input";
+import { serializable } from "@/lib/transaction";
+import { audit, memberSnapshot } from "@/lib/audit";
+import { readJson } from "@/lib/request";
 import { NextResponse } from "next/server";
-import { serverError } from "@/lib/apiError";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getScope, canManage } from "@/lib/scope";
 import { logAudit } from "@/lib/audit";
 
-type Row = { full_name: string; email: string; password: string; department?: string; role?: string; job_title?: string };
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -14,11 +17,14 @@ export async function POST(request: Request) {
   const scope = getScope(session);
   if (!canManage(scope)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { rows }: { rows: Row[] } = await request.json();
+  const body = await readJson(request);
+  if (body instanceof NextResponse) return body;
+  const { rows } = body;
   if (!Array.isArray(rows) || rows.length === 0) {
     return NextResponse.json({ error: "No rows provided" }, { status: 400 });
   }
 
+  if (rows.length > 100) return NextResponse.json({ error: "Import at most 100 members at a time" }, { status: 400 });
   const departments = await prisma.department.findMany();
   const deptByName = new Map(departments.map((d) => [d.name.toLowerCase(), d]));
 
@@ -29,22 +35,16 @@ export async function POST(request: Request) {
     const row = rows[i];
     const rowNum = i + 1;
 
-    if (!row.full_name || !row.email || !row.password) {
-      results.push({ row: rowNum, email: row.email ?? "", ok: false, error: "Missing full_name/email/password" });
+    const validationError = row && typeof row === "object" && !Array.isArray(row)
+      ? validateMemberInput(scope.isLead ? { ...row, role: "member", department: undefined } : row)
+      : "Each row must be an object";
+    if (validationError) {
+      results.push({ row: rowNum, email: typeof row?.email === "string" ? row.email : "", ok: false, error: validationError });
       continue;
     }
-    const email = String(row.email).trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      results.push({ row: rowNum, email: row.email, ok: false, error: "Invalid email address" });
-      continue;
-    }
-    if (row.password.length < 6) {
-      results.push({ row: rowNum, email: row.email, ok: false, error: "Password must be at least 6 characters" });
-      continue;
-    }
-
+    const email = row.email.trim().toLowerCase();
     let departmentId: string | null = null;
-    if (row.department) {
+    if (row.department && !scope.isLead) {
       const dep = deptByName.get(row.department.trim().toLowerCase());
       if (!dep) {
         results.push({ row: rowNum, email: row.email, ok: false, error: `Unknown department "${row.department}"` });
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
       departmentId = dep.id;
     }
 
-    let dbRole = (row.role ?? "member").toUpperCase();
+    let dbRole = scope.isLead ? "MEMBER" : (row.role ?? "member").toUpperCase();
     if (!["ADMIN", "LEAD", "MEMBER"].includes(dbRole)) dbRole = "MEMBER";
 
     if (scope.isLead) {
@@ -73,7 +73,8 @@ export async function POST(request: Request) {
 
     try {
       const passwordHash = await bcrypt.hash(row.password, 10);
-      await prisma.user.create({
+      await serializable(async (tx) => {
+      const member = await tx.user.create({
         data: {
           fullName: String(row.full_name).trim(),
           email,
@@ -82,6 +83,9 @@ export async function POST(request: Request) {
           departmentId,
           jobTitle: row.job_title ? row.job_title.trim() : null,
         },
+      });
+      await recordAssignment(tx, member);
+      await audit(tx, { id: session.user.id, name: session.user.name ?? "Manager" }, "member.create", member.id, `${member.fullName} (${member.email})`, { after: memberSnapshot(member), source: "bulk_import" });
       });
       results.push({ row: rowNum, email: row.email, ok: true });
       successCount++;

@@ -1,3 +1,10 @@
+import { validateGoalInput, isId } from "@/lib/input";
+import { isValidDate } from "@/lib/validation";
+import { getPeriodRange } from "@/lib/periods";
+import { recordGoal } from "@/lib/goalHistory";
+import { serializable, BusinessError } from "@/lib/transaction";
+import { audit } from "@/lib/audit";
+import { readJson } from "@/lib/request";
 import { NextResponse } from "next/server";
 import { serverError } from "@/lib/apiError";
 import { prisma } from "@/lib/prisma";
@@ -61,80 +68,46 @@ export async function POST(request: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const scope = getScope(session);
   if (!canManage(scope)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-  const { scope: goalScope, departmentId, userId, period, targetCount, objectiveId, weight, category } =
-    await request.json();
-
-  if (!["department", "member"].includes(goalScope)) {
-    return NextResponse.json({ error: "Invalid scope" }, { status: 400 });
+  const body = await readJson(request);
+  if (body instanceof NextResponse) return body;
+  const { scope: goalScope, departmentId, userId, period, objectiveId } = body;
+  const error = validateGoalInput(body);
+  if (error) return NextResponse.json({ error }, { status: 400 });
+  if (!["department", "member"].includes(goalScope) || !["WEEKLY", "MONTHLY", "ANNUAL"].includes(period)) {
+    return NextResponse.json({ error: "Invalid scope or period" }, { status: 400 });
   }
-  if (!["WEEKLY", "MONTHLY", "ANNUAL"].includes(period)) {
-    return NextResponse.json({ error: "Invalid period" }, { status: 400 });
+  if (objectiveId != null && objectiveId !== "" && !isId(objectiveId)) return NextResponse.json({ error: "Invalid objective" }, { status: 400 });
+  const start = getPeriodRange(period).start;
+  const effectiveFrom = body.effectiveFrom === undefined ? start : new Date(body.effectiveFrom);
+  if (body.effectiveFrom !== undefined && (!isValidDate(body.effectiveFrom) || effectiveFrom < start || getPeriodRange(period, effectiveFrom).start.getTime() !== effectiveFrom.getTime())) {
+    return NextResponse.json({ error: "Effective date must be the start of the current or a future goal period" }, { status: 400 });
   }
-  const target = Number(targetCount);
-  if (!Number.isFinite(target) || target <= 0) {
-    return NextResponse.json({ error: "Target must be a positive number" }, { status: 400 });
-  }
-  const goalWeight = weight !== undefined && weight !== null && weight !== "" ? Number(weight) : 1;
-  if (!Number.isFinite(goalWeight) || goalWeight <= 0) {
-    return NextResponse.json({ error: "Weight must be a positive number" }, { status: 400 });
-  }
-  const goalCategory = category === "BEHAVIOURAL" ? "BEHAVIOURAL" : "CORE";
-  if (objectiveId != null && objectiveId !== "" && typeof objectiveId !== "string") {
-    return NextResponse.json({ error: "Invalid objective" }, { status: 400 });
-  }
-
-  // A goal can only feed an objective of the department it applies to; otherwise one
-  // department's KPIs would move another department's objective progress.
-  async function objectiveBelongsTo(goalDepartmentId: string | null) {
-    if (!objectiveId) return true;
-    if (!goalDepartmentId) return false;
-    const objective = await prisma.objective.findFirst({
-      where: { id: objectiveId, departmentId: goalDepartmentId },
-      select: { id: true },
-    });
-    return objective != null;
-  }
-
   try {
-    if (goalScope === "department") {
-      if (!departmentId) return NextResponse.json({ error: "Department is required" }, { status: 400 });
-      if (typeof departmentId !== "string") return NextResponse.json({ error: "Invalid department" }, { status: 400 });
-      if (scope.isLead && departmentId !== scope.departmentId) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const goal = await serializable(async (tx) => {
+      let goalDepartmentId: string | null;
+      if (goalScope === "department") {
+        if (!isId(departmentId)) throw new BusinessError("Department is required");
+        if (scope.isLead && departmentId !== scope.departmentId) throw new BusinessError("Forbidden", 403);
+        goalDepartmentId = departmentId;
+      } else {
+        if (!isId(userId)) throw new BusinessError("Member is required");
+        const target = await tx.user.findUnique({ where: { id: userId } });
+        if (!target || target.archivedAt) throw new BusinessError("Member not found", 404);
+        if (!canManageUser(scope, target)) throw new BusinessError("You cannot manage this member's goal", 403);
+        goalDepartmentId = target.departmentId;
       }
-      if (!(await objectiveBelongsTo(departmentId))) {
-        return NextResponse.json({ error: "Objective must belong to the same department" }, { status: 400 });
+      if (objectiveId && (!goalDepartmentId || !(await tx.objective.findFirst({ where: { id: objectiveId, departmentId: goalDepartmentId } })))) {
+        throw new BusinessError("Objective must belong to the same department");
       }
-      const goal = await prisma.goal.upsert({
-        where: { departmentId_period: { departmentId, period } },
-        create: { departmentId, period, targetCount: target, objectiveId: objectiveId || null, weight: goalWeight, category: goalCategory },
-        update: { targetCount: target, objectiveId: objectiveId || null, weight: goalWeight, category: goalCategory },
-      });
-      return NextResponse.json({ goal });
-    } else {
-      if (!userId) return NextResponse.json({ error: "Member is required" }, { status: 400 });
-      if (typeof userId !== "string") return NextResponse.json({ error: "Invalid member" }, { status: 400 });
-      const targetUser = await prisma.user.findUnique({ where: { id: userId } });
-      if (!targetUser) return NextResponse.json({ error: "Member not found" }, { status: 404 });
-      // nobody sets their own target; leads only set targets for members of their department
-      if (targetUser.id === scope.userId) {
-        return NextResponse.json({ error: "You can't set your own goal" }, { status: 403 });
-      }
-      if (!canManageUser(scope, targetUser)) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
-      if (!(await objectiveBelongsTo(targetUser.departmentId))) {
-        return NextResponse.json({ error: "Objective must belong to the member's department" }, { status: 400 });
-      }
-      const goal = await prisma.goal.upsert({
-        where: { userId_period: { userId, period } },
-        create: { userId, period, targetCount: target, objectiveId: objectiveId || null, weight: goalWeight, category: goalCategory },
-        update: { targetCount: target, objectiveId: objectiveId || null, weight: goalWeight, category: goalCategory },
-      });
-      return NextResponse.json({ goal });
-    }
-  } catch (err: any) {
-    return serverError(err);
-  }
+      const where = goalScope === "department" ? { departmentId_period: { departmentId, period } } : { userId_period: { userId, period } };
+      const before = await tx.goal.findUnique({ where });
+      const data = { targetCount: Number(body.targetCount), weight: body.weight == null || body.weight === "" ? 1 : Number(body.weight), category: body.category ?? "CORE", objectiveId: objectiveId || null };
+      const saved = await tx.goal.upsert({ where,
+        create: { ...data, period, ...(goalScope === "department" ? { departmentId } : { userId }) }, update: data });
+      await recordGoal(tx, saved, effectiveFrom);
+      await audit(tx, { id: session.user.id, name: session.user.name ?? "Manager" }, "goal.save", saved.id, `${period} goal`, { before, after: saved, effectiveFrom });
+      return saved;
+    });
+    return NextResponse.json({ goal });
+  } catch (err) { return serverError(err); }
 }

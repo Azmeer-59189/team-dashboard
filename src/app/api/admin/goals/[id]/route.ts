@@ -1,3 +1,7 @@
+import { serializable, BusinessError } from "@/lib/transaction";
+import { recordGoal } from "@/lib/goalHistory";
+import { getPeriodRange } from "@/lib/periods";
+import { audit } from "@/lib/audit";
 import { NextResponse } from "next/server";
 import { serverError } from "@/lib/apiError";
 import { prisma } from "@/lib/prisma";
@@ -20,7 +24,17 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   try {
-    await prisma.goal.delete({ where: { id: params.id } });
+    await serializable(async (tx) => {
+      const current = await tx.goal.findUnique({ where: { id: params.id }, include: { user: true } });
+      if (!current) throw new BusinessError("Goal not found", 404);
+      const permitted = current.user ? canManageUser(scope, current.user) : scope.isAdmin || current.departmentId === scope.departmentId;
+      if (!permitted) throw new BusinessError("Forbidden", 403);
+      await recordGoal(tx, current, undefined, true);
+      // Cancel scheduled revisions so a deleted goal cannot return next month.
+      await tx.goalRevision.deleteMany({ where: { goalId: current.id, effectiveFrom: { gt: getPeriodRange(current.period).start } } });
+      await tx.goal.delete({ where: { id: current.id } });
+      await audit(tx, { id: session.user.id, name: session.user.name ?? "Manager" }, "goal.delete", current.id, "KPI goal", { before: { ...current, user: undefined } });
+    });
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     return serverError(err);

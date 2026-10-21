@@ -1,85 +1,52 @@
-import { prisma } from "@/lib/prisma";
-import { getPeriodRange } from "@/lib/goals";
-import { monthLabel, todayInTimeZone } from "@/lib/dates";
-
-// Matches the CRD spec: Core (automatic, count-based KPIs) 65% + Behavioural
-// (manager-rated) 35% = Overall/100. If one half has no data, the other counts
-// for 100% rather than the missing half being scored as zero.
-const CORE_WEIGHT = 0.65;
-const BEHAVIOURAL_WEIGHT = 0.35;
+import type { Prisma } from "@prisma/client";
+import { prisma } from "./prisma";
+import { getPeriodRange } from "./periods";
+import { monthLabel, todayInTimeZone } from "./dates";
+import { applicableGoals } from "./goalHistory";
+import { resolveGoal, completionPercent, combineScores } from "./scoring";
+import { assignmentsAt } from "./assignments";
 
 export type CompositeScore = {
-  userId: string;
-  corePct: number | null;
-  coreGoalCount: number;
-  behaviouralPct: number | null;
-  behaviouralScoreCount: number;
-  overall: number | null;
+  userId: string; corePct: number | null; coreGoalCount: number;
+  behaviouralPct: number | null; behaviouralScoreCount: number; overall: number | null;
 };
-
-// Weighted average completion % across this person's applicable CORE, MONTHLY
-// KPIs (individual override wins over the department default, same rule as
-// everywhere else in the app).
-async function getCoreScore(userId: string, departmentId: string | null, reference: Date) {
-  const [memberGoals, departmentGoals] = await Promise.all([
-    prisma.goal.findMany({ where: { userId, period: "MONTHLY", category: "CORE" } }),
-    departmentId
-      ? prisma.goal.findMany({ where: { departmentId, period: "MONTHLY", category: "CORE" } })
-      : Promise.resolve([]),
-  ]);
-
-  // exactly one CORE/MONTHLY goal can apply per person: their own override, or the department default
-  const goal = memberGoals[0] ?? departmentGoals[0];
-  if (!goal) return { pct: null, count: 0 };
-
-  const { start, end } = getPeriodRange("MONTHLY", reference);
-  const done = await prisma.task.count({
-    where: { userId, status: "DONE", taskDate: { gte: start, lte: end } },
-  });
-  const pct = Math.min(100, (done / goal.targetCount) * 100);
-  return { pct, count: 1 };
-}
-
-async function getBehaviouralScore(userId: string, periodLabel: string) {
-  const scores = await prisma.manualScore.findMany({ where: { userId, periodLabel } });
-  if (scores.length === 0) return { pct: null, count: 0 };
-  const avg = scores.reduce((sum, s) => sum + s.score, 0) / scores.length;
-  return { pct: avg * 10, count: scores.length }; // scores are 0-10, rescale to 0-100
-}
-
-export async function getCompositeScore(
-  userId: string,
-  departmentId: string | null,
-  reference: Date = todayInTimeZone()
-): Promise<CompositeScore> {
+const rounded = (value: number | null) => value === null ? null : Math.round(value);
+export async function getCompositeScores(members: { id: string; departmentId: string | null }[], reference = todayInTimeZone(), db: Prisma.TransactionClient = prisma) {
+  const result = new Map<string, CompositeScore>();
+  if (!members.length) return result;
   const periodLabel = monthLabel(reference);
-  const [core, behavioural] = await Promise.all([
-    getCoreScore(userId, departmentId, reference),
-    getBehaviouralScore(userId, periodLabel),
-  ]);
-
-  let overall: number | null = null;
-  if (core.pct !== null && behavioural.pct !== null) {
-    overall = core.pct * CORE_WEIGHT + behavioural.pct * BEHAVIOURAL_WEIGHT;
-  } else if (core.pct !== null) {
-    overall = core.pct;
-  } else if (behavioural.pct !== null) {
-    overall = behavioural.pct;
+  const closed = await db.monthlyReport.findUnique({ where: { periodLabel } });
+  if (closed) {
+    const rows = closed.rows as unknown as { member: { id: string }; score: CompositeScore }[];
+    for (const member of members) result.set(member.id, rows.find((r) => r.member.id === member.id)?.score ?? {
+      userId: member.id, corePct: null, coreGoalCount: 0, behaviouralPct: null, behaviouralScoreCount: 0, overall: null,
+    });
+    return result;
   }
-
-  return {
-    userId,
-    corePct: core.pct !== null ? Math.round(core.pct) : null,
-    coreGoalCount: core.count,
-    behaviouralPct: behavioural.pct !== null ? Math.round(behavioural.pct) : null,
-    behaviouralScoreCount: behavioural.count,
-    overall: overall !== null ? Math.round(overall) : null,
-  };
+  const userId = { in: members.map((m) => m.id) };
+  members = await assignmentsAt(members, reference, db);
+  const { start, end } = getPeriodRange("MONTHLY", reference);
+  const [goals, counts, ratings] = await Promise.all([
+    applicableGoals(members, reference, db),
+    db.task.groupBy({ by: ["userId"], where: { userId, status: "DONE", taskDate: { gte: start, lte: end } }, _count: { _all: true } }),
+    db.manualScore.groupBy({ by: ["userId"], where: { userId, periodLabel, supersededAt: null }, _avg: { score: true }, _count: { _all: true } }),
+  ]);
+  const done = new Map(counts.map((c) => [c.userId, c._count._all]));
+  const assessments = new Map(ratings.map((r) => [r.userId, r]));
+  for (const member of members) {
+    const goal = resolveGoal(goals, member.id, member.departmentId, "MONTHLY");
+    const core = goal?.category === "CORE" ? completionPercent(done.get(member.id) ?? 0, goal.targetCount) : null;
+    const rating = assessments.get(member.id);
+    const behavioural = rating?._avg.score != null ? rating._avg.score * 10 : null;
+    result.set(member.id, { userId: member.id, corePct: rounded(core), coreGoalCount: core === null ? 0 : 1,
+      behaviouralPct: rounded(behavioural), behaviouralScoreCount: rating?._count._all ?? 0,
+      overall: rounded(combineScores(core, behavioural)) });
+  }
+  return result;
 }
-
+export async function getCompositeScore(userId: string, departmentId: string | null, reference = todayInTimeZone()): Promise<CompositeScore> {
+  return (await getCompositeScores([{ id: userId, departmentId }], reference)).get(userId)!;
+}
 export function scoreLabel(overall: number | null) {
-  if (overall === null) return "No data";
-  if (overall >= 80) return "Excellent";
-  if (overall >= 60) return "Good";
-  return "Needs improvement";
+  return overall === null ? "No data" : overall >= 80 ? "Excellent" : overall >= 60 ? "Good" : "Needs improvement";
 }

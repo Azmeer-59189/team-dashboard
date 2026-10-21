@@ -2,7 +2,7 @@ import PageHeader from "@/components/PageHeader";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getScope } from "@/lib/scope";
-import { getMemberGoalProgress } from "@/lib/goals";
+import { getMembersGoalProgress } from "@/lib/goals";
 import ProgressBar from "@/components/ProgressBar";
 
 export default async function ProgressPage({
@@ -17,19 +17,15 @@ export default async function ProgressPage({
 
   const members = await prisma.user.findMany({
     where: {
-      role: { in: ["MEMBER", "LEAD"] },
+      archivedAt: null, role: { in: ["MEMBER", "LEAD"] },
       ...(scope.isLead ? { departmentId: scope.departmentId } : searchParams.department ? { departmentId: searchParams.department } : {}),
     },
     include: { department: { select: { name: true } } },
     orderBy: { fullName: "asc" },
   });
 
-  const rows = await Promise.all(
-    members.map(async (m) => ({
-      member: m,
-      goals: await getMemberGoalProgress(m.id, m.departmentId),
-    }))
-  );
+  const progress = await getMembersGoalProgress(members);
+  const rows = members.map((member) => ({ member, goals: progress.get(member.id) ?? [] }));
 
   return (
     <div className="space-y-6">

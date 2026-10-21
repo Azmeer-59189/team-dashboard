@@ -36,6 +36,8 @@ function dateOrNull(d: Date | null) {
 export function formatTask(task: TaskWithRelations) {
   return {
     id: task.id,
+    version: task.version,
+    completed_at: task.completedAt?.toISOString() ?? null,
     content: task.content,
     type: typeFromDb(task.type),
     task_date: task.taskDate.toISOString().slice(0, 10),
@@ -55,6 +57,7 @@ export function formatTask(task: TaskWithRelations) {
 export function formatMember(user: User & { department?: Pick<Department, "name"> | null }) {
   return {
     id: user.id,
+    archived_at: user.archivedAt?.toISOString() ?? null,
     full_name: user.fullName,
     email: user.email,
     role: user.role.toLowerCase(),

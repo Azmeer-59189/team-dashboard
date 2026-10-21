@@ -1,5 +1,7 @@
 # Team Dashboard
 
+> **Backend upgrade:** Follow [BACKEND.md](./BACKEND.md) before running or deploying this version. Existing databases need migration baselining and `npm run db:deploy`; `db push` does not apply the required history backfills. The older setup instructions below predate this migration workflow.
+
 ## Reliability improvements
 
 - Server-side authorization reloads the current account, role, and department on each session check. Deleted accounts lose access and role changes apply without requiring another login. Middleware checks authentication; protected layouts and API handlers enforce current permissions.

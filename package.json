@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:db": "tsx --test tests/database.test.ts",
+    "db:deploy": "prisma migrate deploy",
     "test": "tsx --test src/lib/*.test.ts",
     "dev": "next dev",
     "build": "prisma generate && next build",
@@ -23,6 +25,7 @@
     "recharts": "^2.12.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.11",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.3",
