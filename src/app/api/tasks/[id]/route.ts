@@ -17,11 +17,16 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   const allowed = await canModify(params.id, session.user.id, session.user.role === "ADMIN");
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const updates = await request.json();
+  const updates = await request.json().catch(() => null);
+  if (!updates || typeof updates !== "object" || Array.isArray(updates)) {
+    return NextResponse.json({ error: "Expected a JSON object" }, { status: 400 });
+  }
+  const existing = await prisma.task.findUnique({ where: { id: params.id } });
+  if (!existing) return NextResponse.json({ error: "Task not found" }, { status: 404 });
 
   const validationError = validateTaskFields({
-    type: updates.type,
-    content: updates.content,
+    type: updates.type === undefined ? existing.type.toLowerCase() : updates.type,
+    content: updates.content === undefined ? existing.content : updates.content,
     task_date: updates.task_date,
     status: updates.status,
     category: updates.category,

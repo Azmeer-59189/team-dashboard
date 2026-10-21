@@ -99,7 +99,7 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`sticky top-0 flex h-screen shrink-0 flex-col self-start bg-gradient-to-b from-brand-500 to-brand-700 text-white transition-[width] duration-200 ${
+      className={`sticky top-0 flex h-screen shrink-0 flex-col self-start border-r border-white/5 bg-[#102e2a] text-white transition-[width] duration-200 ${
         collapsed ? "w-[72px]" : "w-60"
       }`}
     >
@@ -111,7 +111,7 @@ export default function Sidebar({
           {!collapsed && (
             <div className="min-w-0">
               <p className="truncate font-display text-sm font-semibold">Team Dashboard</p>
-              <p className="truncate text-xs text-white/70">{name}</p>
+              <p className="mt-0.5 truncate text-xs text-white/50">Team workspace</p>
             </div>
           )}
         </div>
@@ -135,6 +135,7 @@ export default function Sidebar({
       )}
 
       <nav id="sidebar-nav" aria-label="Main navigation" className="flex-1 space-y-1 overflow-y-auto p-3">
+        {!collapsed && <p className="px-3 pb-3 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">Workspace</p>}
         {links.map((link) => {
           const active = isActive(link.href);
           return (
@@ -145,7 +146,7 @@ export default function Sidebar({
               aria-current={active ? "page" : undefined}
               title={collapsed ? link.label : undefined}
               className={`${itemBase} ${collapsed ? "justify-center" : ""} ${
-                active ? "bg-white/15 text-white" : "text-white/75 hover:bg-white/10 hover:text-white"
+                active ? "bg-white/10 text-white shadow-[inset_3px_0_0_#74d5b7]" : "text-white/60 hover:bg-white/5 hover:text-white"
               }`}
             >
               <Icon name={link.icon} />
@@ -156,6 +157,10 @@ export default function Sidebar({
       </nav>
 
       <div className="space-y-1 border-t border-white/10 p-3">
+        {!collapsed && <div className="mb-3 flex items-center gap-3 px-3 py-2">
+          <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-emerald-200">{name.trim().charAt(0).toUpperCase() || "U"}</span>
+          <div className="min-w-0"><p className="truncate text-sm font-medium">{name}</p><p className="mt-0.5 text-xs capitalize text-white/45">{role === "lead" ? "Department lead" : role}</p></div>
+        </div>}
         {DEMO_MODE && role === "admin" && (
           <button
             type="button"

@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     due_date,
     delivered_date,
     revision_rounds,
-  } = await request.json();
+  } = await request.json().catch(() => ({})) ?? {};
 
   if (!type || !content || !task_date) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -45,6 +45,18 @@ export async function POST(request: Request) {
   }
 
   try {
+    if (objective_id) {
+      if (typeof objective_id !== "string" || !session.user.departmentId) {
+        return NextResponse.json({ error: "Invalid objective" }, { status: 400 });
+      }
+      const objective = await prisma.objective.findFirst({
+        where: { id: objective_id, departmentId: session.user.departmentId },
+        select: { id: true },
+      });
+      if (!objective) {
+        return NextResponse.json({ error: "Objective must belong to your department" }, { status: 400 });
+      }
+    }
     const task = await prisma.task.create({
       data: {
         userId: session.user.id,

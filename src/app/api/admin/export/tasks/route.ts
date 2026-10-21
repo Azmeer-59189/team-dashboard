@@ -5,7 +5,8 @@ import { getScope, canManage } from "@/lib/scope";
 import { statusToDb, typeFromDb, statusFromDb, priorityFromDb } from "@/lib/format";
 
 function csvEscape(value: string) {
-  if (/[",\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
+  if (/^[=+@\-\t\r]/.test(value)) value = "'" + value;
+  if (/[",\r\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
   return value;
 }
 
@@ -39,7 +40,6 @@ export async function GET(request: Request) {
     where,
     include: { user: { select: { fullName: true, email: true } }, department: { select: { name: true } } },
     orderBy: { taskDate: "desc" },
-    take: 5000,
   });
 
   const header = [

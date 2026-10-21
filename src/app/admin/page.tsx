@@ -61,19 +61,24 @@ export default async function AdminOverview({
     if (searchParams.to) where.taskDate.lte = new Date(searchParams.to);
   }
 
-  // full matching set for chart accuracy (uncapped-ish), separate from the paginated table below
-  const chartTasks = await prisma.task.findMany({
+  // Aggregate in PostgreSQL so charts include every matching task.
+  const groups = await prisma.task.groupBy({
+    by: ["status", "taskDate", "departmentId", "userId"],
     where,
-    select: {
-      status: true,
-      taskDate: true,
-      departmentId: true,
-      userId: true,
-      department: { select: { name: true } },
-      user: { select: { fullName: true } },
-    },
-    take: 5000,
+    _count: { _all: true },
   });
+  const chartUsers = await prisma.user.findMany({
+    where: { id: { in: [...new Set(groups.map((g) => g.userId))] } },
+    select: { id: true, fullName: true },
+  });
+  const userNames = new Map(chartUsers.map((u) => [u.id, u.fullName]));
+  const departmentNames = new Map(departments.map((d) => [d.id, d.name]));
+  const chartTasks = groups.map((g) => ({
+    ...g,
+    count: g._count._all,
+    user: { fullName: userNames.get(g.userId) ?? "Unknown member" },
+    department: g.departmentId ? { name: departmentNames.get(g.departmentId) ?? "Unknown department" } : null,
+  }));
 
   const tasks = await prisma.task.findMany({
     where,
@@ -82,10 +87,10 @@ export default async function AdminOverview({
     take: 50,
   });
 
-  const total = chartTasks.length;
-  const done = chartTasks.filter((t) => t.status === "DONE").length;
-  const inProgress = chartTasks.filter((t) => t.status === "IN_PROGRESS").length;
-  const pending = chartTasks.filter((t) => t.status === "PENDING").length;
+  const total = chartTasks.reduce((sum, t) => sum + t.count, 0);
+  const done = chartTasks.filter((t) => t.status === "DONE").reduce((sum, t) => sum + t.count, 0);
+  const inProgress = chartTasks.filter((t) => t.status === "IN_PROGRESS").reduce((sum, t) => sum + t.count, 0);
+  const pending = chartTasks.filter((t) => t.status === "PENDING").reduce((sum, t) => sum + t.count, 0);
 
   const [memberCount, deptCount] = await Promise.all([
     prisma.user.count({ where: { role: "MEMBER", ...(scope.isLead ? { departmentId: scope.departmentId } : {}) } }),
@@ -106,7 +111,7 @@ export default async function AdminOverview({
     const byDate = new Map<string, number>();
     for (const t of chartTasks) {
       const key = t.taskDate.toISOString().slice(0, 10);
-      byDate.set(key, (byDate.get(key) ?? 0) + 1);
+      byDate.set(key, (byDate.get(key) ?? 0) + t.count);
     }
     trendData = Array.from(byDate.entries())
       .sort(([a], [b]) => a.localeCompare(b))
@@ -115,25 +120,29 @@ export default async function AdminOverview({
     const byMember = new Map<string, number>();
     for (const t of chartTasks) {
       const key = t.user.fullName;
-      byMember.set(key, (byMember.get(key) ?? 0) + 1);
+      byMember.set(key, (byMember.get(key) ?? 0) + t.count);
     }
     barData = Array.from(byMember.entries()).map(([name, value]) => ({ name, value }));
   } else {
     const byDept = new Map<string, number>();
     for (const t of chartTasks) {
       const key = t.department?.name ?? "No department";
-      byDept.set(key, (byDept.get(key) ?? 0) + 1);
+      byDept.set(key, (byDept.get(key) ?? 0) + t.count);
     }
     barData = Array.from(byDept.entries()).map(([name, value]) => ({ name, value }));
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-xl font-semibold text-ink">Overview</h1>
-        <p className="text-sm text-muted">
+      <div className="flex flex-wrap items-start justify-between gap-4 pb-1">
+        <div>
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500">Your workspace</p>
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">Team overview</h1>
+        <p className="mt-2 text-sm text-muted">
           {scope.isLead ? "Your department's performance at a glance." : "Team-wide performance at a glance."}
         </p>
+        </div>
+        <a href="/admin/my-tasks" className="btn-primary gap-2"><span aria-hidden="true">+</span> Log a task</a>
       </div>
 
       <StatCard
@@ -160,19 +169,21 @@ export default async function AdminOverview({
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="card">
-          <h2 className="mb-2 font-display font-semibold text-ink">Status breakdown</h2>
+          <h2 className="font-display font-semibold text-ink">Status breakdown</h2>
+          <p className="mb-4 mt-1 text-xs text-muted">How work is moving across your selection</p>
           <StatusPieChart pending={pending} inProgress={inProgress} done={done} />
         </div>
         <div className="card">
-          <h2 className="mb-2 font-display font-semibold text-ink">
+          <h2 className="font-display font-semibold text-ink">
             {chartMode === "trend" ? "Daily tasks (this selection)" : chartMode === "byMember" ? "Tasks by member" : "Tasks by department"}
           </h2>
+          <p className="mb-4 mt-1 text-xs text-muted">Task activity for the current filters</p>
           {chartMode === "trend" ? <TrendChart data={trendData} /> : <ComparisonBarChart data={barData} />}
         </div>
       </div>
 
       <div className="card">
-        <h2 className="mb-3 font-display font-semibold text-ink">Tasks</h2>
+        <div className="mb-5 flex items-center justify-between gap-3"><div><h2 className="font-display font-semibold text-ink">Recent tasks</h2><p className="mt-1 text-xs text-muted">Latest 50 tasks matching your filters</p></div><a href={`/admin/tasks?${new URLSearchParams(searchParams).toString()}`} className="text-sm font-medium text-brand-600 hover:underline">View all tasks <span aria-hidden="true">&rarr;</span></a></div>
         <TaskTable tasks={tasks.map((t) => formatTask({ ...t, user: t.user, department: t.department }))} showOwner />
       </div>
     </div>

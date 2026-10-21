@@ -7,5 +7,8 @@ const STYLES: Record<string, string> = {
 };
 
 export default function StatusBadge({ status }: { status: string }) {
-  return <span className={`badge ${STYLES[status] ?? STYLES.pending}`}>{status}</span>;
+  const label = { pending: "Pending", "in-progress": "In progress", done: "Done" }[status] ?? status;
+  return <span className={`badge gap-1.5 whitespace-nowrap ${STYLES[status] ?? STYLES.pending}`}>
+    <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />{label}
+  </span>;
 }

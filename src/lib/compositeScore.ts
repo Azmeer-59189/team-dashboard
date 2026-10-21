@@ -23,7 +23,7 @@ function monthLabel(date: Date = new Date()) {
 // Weighted average completion % across this person's applicable CORE, MONTHLY
 // KPIs (individual override wins over the department default, same rule as
 // everywhere else in the app).
-async function getCoreScore(userId: string, departmentId: string | null) {
+async function getCoreScore(userId: string, departmentId: string | null, reference: Date) {
   const [memberGoals, departmentGoals] = await Promise.all([
     prisma.goal.findMany({ where: { userId, period: "MONTHLY", category: "CORE" } }),
     departmentId
@@ -35,7 +35,7 @@ async function getCoreScore(userId: string, departmentId: string | null) {
   const goal = memberGoals[0] ?? departmentGoals[0];
   if (!goal) return { pct: null, count: 0 };
 
-  const { start, end } = getPeriodRange("MONTHLY");
+  const { start, end } = getPeriodRange("MONTHLY", reference);
   const done = await prisma.task.count({
     where: { userId, status: "DONE", taskDate: { gte: start, lte: end } },
   });
@@ -57,7 +57,7 @@ export async function getCompositeScore(
 ): Promise<CompositeScore> {
   const periodLabel = monthLabel(reference);
   const [core, behavioural] = await Promise.all([
-    getCoreScore(userId, departmentId),
+    getCoreScore(userId, departmentId, reference),
     getBehaviouralScore(userId, periodLabel),
   ]);
 

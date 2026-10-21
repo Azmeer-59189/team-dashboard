@@ -62,13 +62,19 @@ export default function TaskTable({
   }
 
   if (tasks.length === 0) {
-    return <p className="py-8 text-center text-sm text-muted">No tasks found.</p>;
+    return <div className="flex flex-col items-center rounded-xl border border-dashed border-hairline bg-slate-50/70 px-6 py-12 text-center">
+      <span aria-hidden="true" className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-brand-500">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="4" y="3" width="16" height="18" rx="3" /><path d="m8 10 2 2 5-5M8 16h8" /></svg>
+      </span>
+      <p className="font-display font-semibold text-ink">No tasks to show yet</p>
+      <p className="mt-2 max-w-xs text-sm leading-6 text-muted">Tasks will appear here once logged. If you’re using filters, try adjusting them to see more results.</p>
+    </div>;
   }
 
   return (
     <div className="overflow-x-auto">
       {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
-      <table className="w-full text-left text-sm">
+      <table className="task-table w-full text-left text-sm">
         <thead>
           <tr className="border-b border-hairline text-muted">
             <th className="py-2 pr-4">Date</th>
@@ -93,6 +99,7 @@ export default function TaskTable({
                   <a
                     href={t.content}
                     target="_blank"
+                    rel="noopener noreferrer"
                     className="text-brand-600 hover:underline break-all"
                   >
                     {t.content}
@@ -112,7 +119,8 @@ export default function TaskTable({
               <td className="py-2 pr-4">
                 {editable ? (
                   <select
-                    className="input py-1"
+                    className="input min-w-[130px] py-1"
+                    aria-label={`Status for ${t.content.slice(0, 60)}`}
                     value={t.status}
                     onChange={(e) => updateStatus(t.id, e.target.value)}
                   >

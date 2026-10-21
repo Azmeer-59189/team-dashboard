@@ -5,11 +5,12 @@ import Sidebar from "@/components/Sidebar";
 export default async function MemberLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) redirect("/login");
+  if (session.user.role !== "MEMBER") redirect("/admin");
 
   return (
     <div className="flex">
       <Sidebar
-        role={session.user.role === "ADMIN" ? "admin" : "member"}
+        role="member"
         name={session.user.name ?? session.user.email ?? ""}
       />
       <main className="min-h-screen min-w-0 flex-1 p-4 sm:p-6 lg:p-8">

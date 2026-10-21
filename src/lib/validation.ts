@@ -14,8 +14,9 @@ export function isValidUrl(value: string) {
 }
 
 export function isValidDate(value: string) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const d = new Date(value);
-  return !Number.isNaN(d.getTime());
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === value;
 }
 
 // Validates whatever subset of task fields is present (works for both full
@@ -34,6 +35,15 @@ export function validateTaskFields(fields: {
   delivered_date?: string | null;
   revision_rounds?: number | string | null;
 }): string | null {
+  for (const key of ["type", "content", "task_date", "status"] as const) {
+    if (fields[key] !== undefined && typeof fields[key] !== "string") return `${key} must be text`;
+  }
+  for (const key of ["category", "chapter", "campaign", "priority", "due_date", "delivered_date"] as const) {
+    if (fields[key] != null && typeof fields[key] !== "string") return `${key} must be text`;
+  }
+  if (fields.revision_rounds != null && typeof fields.revision_rounds !== "number" && typeof fields.revision_rounds !== "string") {
+    return "Revision rounds must be a whole number, 0 or more";
+  }
   if (fields.type !== undefined && !VALID_TYPES.includes(fields.type)) {
     return "Task type must be 'text' or 'link'";
   }

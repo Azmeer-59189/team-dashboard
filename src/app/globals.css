@@ -7,7 +7,7 @@
 body {
   @apply text-ink font-sans;
   min-height: 100vh;
-  background: linear-gradient(160deg, #e6f0eb 0%, #f2f5ee 45%, #f8f0e2 100%);
+  background: radial-gradient(ellipse at top right, #e9f3ef 0%, transparent 48%), #f5f7f8;
   background-attachment: fixed;
 }
 
@@ -20,7 +20,7 @@ h1 {
 
 /* Standard card: rounded, hairline border, soft green-tinted shadow. */
 .card {
-  @apply bg-surface rounded-2xl border border-hairline p-5 shadow-soft;
+  @apply bg-surface rounded-2xl border border-hairline p-5 shadow-soft sm:p-6;
 }
 
 .btn-primary {
@@ -32,7 +32,7 @@ h1 {
 }
 
 .input {
-  @apply w-full rounded-xl border border-hairline bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20;
+  @apply w-full min-h-10 rounded-xl border border-hairline bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted transition-colors hover:border-brand-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20;
 }
 
 .badge {
@@ -41,9 +41,9 @@ h1 {
 
 /* Tables inside cards: quieter headers, gentle row hover. */
 .card table thead th {
-  @apply text-xs font-medium text-muted;
-  padding-top: 0.6rem;
-  padding-bottom: 0.6rem;
+  @apply bg-slate-50 text-xs font-semibold text-muted;
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
 }
 .card table tbody tr {
   @apply transition-colors;
@@ -54,18 +54,33 @@ h1 {
 
 /* Hero stat: the one bold number per page, on a soft teal-to-sand wash. */
 .stat-hero {
-  @apply rounded-3xl border border-brand-100 bg-gradient-to-br from-brand-50 via-white to-tint-sand p-6 shadow-soft;
+  @apply relative overflow-hidden rounded-3xl border border-brand-600 bg-gradient-to-br from-brand-600 to-brand-700 p-6 shadow-soft sm:p-8;
+}
+.stat-hero::after {
+  content: "";
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  right: -65px;
+  top: -100px;
+  border: 36px solid rgb(255 255 255 / 0.06);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.stat-hero .trend-pill {
+  background: rgb(255 255 255 / 0.14);
+  color: white;
 }
 .stat-hero-value {
-  @apply font-display text-4xl font-semibold tracking-tight text-brand-700 sm:text-5xl;
+  @apply font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl;
 }
 .stat-hero-label {
-  @apply text-sm text-muted;
+  @apply text-sm font-medium text-white/80;
 }
 
 /* Secondary stats: quiet, tinted by tone. */
 .stat-secondary {
-  @apply rounded-2xl border p-4;
+  @apply rounded-2xl border p-5;
 }
 .stat-tone-neutral {
   @apply border-hairline bg-surface;
@@ -83,10 +98,26 @@ h1 {
   @apply border-transparent bg-tint-blush;
 }
 .stat-secondary-value {
-  @apply font-display text-xl font-semibold text-ink;
+  @apply font-display text-2xl font-semibold tracking-tight text-ink;
+  font-variant-numeric: tabular-nums;
 }
 .stat-secondary-label {
-  @apply text-xs text-muted;
+  @apply text-xs font-medium text-muted;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+.task-table th:first-child, .task-table td:first-child { padding-left: 1rem; }
+.task-table th:last-child, .task-table td:last-child { padding-right: 1rem; }
+.task-table tbody td { padding-top: 1rem; padding-bottom: 1rem; vertical-align: top; }
+.task-table tbody tr:last-child { border-bottom: 0; }
+::selection { background: #d2e7e1; color: #0a4a3e; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
 
 /* Trend pill: small, quiet, colored by direction. */

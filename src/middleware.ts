@@ -3,16 +3,8 @@ import { NextResponse } from "next/server";
 
 export default withAuth(
   function middleware(req) {
-    const token = req.nextauth.token;
-    const path = req.nextUrl.pathname;
-
-    // /admin is shared by ADMIN and LEAD; only plain MEMBER gets bounced to /member
-    if (path.startsWith("/admin") && token?.role === "MEMBER") {
-      return NextResponse.redirect(new URL("/member", req.url));
-    }
-    if (path.startsWith("/member") && token?.role !== "MEMBER") {
-      return NextResponse.redirect(new URL("/admin", req.url));
-    }
+    // Layouts enforce roles using the current database account. JWT role claims
+    // can be stale after an administrator changes someone's access.
     return NextResponse.next();
   },
   {

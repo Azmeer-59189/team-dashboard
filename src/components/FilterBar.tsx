@@ -42,7 +42,12 @@ export default function FilterBar({
     : members;
 
   return (
-    <div className="card flex flex-wrap items-end gap-4">
+    <section className="card" aria-label="Task filters">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-ink">Filter tasks</h2>
+        {searchParams.toString() && <button onClick={() => router.push(pathname)} className="rounded-lg px-2 py-1 text-xs font-medium text-brand-600 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500">Reset filters</button>}
+      </div>
+      <div className="filter-grid">
       {!hideDepartment && (
         <div>
           <label className="mb-1 block text-xs font-medium text-muted">Department</label>
@@ -103,9 +108,7 @@ export default function FilterBar({
         />
       </div>
 
-      <button onClick={() => router.push(pathname)} className="btn-secondary">
-        Clear filters
-      </button>
-    </div>
+      </div>
+    </section>
   );
 }

@@ -1,5 +1,13 @@
 # Team Dashboard
 
+## Reliability improvements
+
+- Server-side authorization reloads the current account, role, and department on each session check. Deleted accounts lose access and role changes apply without requiring another login. Middleware checks authentication; protected layouts and API handlers enforce current permissions.
+- Task creation only accepts objectives belonging to the caller's department. Task validation rejects malformed field types and impossible calendar dates; partial edits validate the resulting task's link/content combination.
+- Overview charts and totals aggregate all matching tasks in PostgreSQL, without a 5,000-task cutoff. CSV exports include all matches and neutralize spreadsheet formula prefixes in text cells. Exports currently assemble the file in memory.
+- Historical composite scores use the requested month for both Core and Behavioural components.
+- Run `npm test` for task-validation regression tests and `npx tsc --noEmit` for type checking.
+
 Role-based daily task tracker for multi-department teams (Design, Dev, Content, Grants, etc).
 
 > **How the scoring/KPI math actually works** (Consistency, Objectives, Composite Scores) is documented separately in [`SCORING.md`](./SCORING.md) — read that if a number on screen doesn't look right, rather than guessing from the code.
