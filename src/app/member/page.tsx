@@ -27,21 +27,21 @@ export default async function MemberDashboard() {
   const [tasks, doneCount, pendingCount, inProgressCount, totalCount, goals, recentTasks, doneThisMonth, doneLastMonth] =
     await Promise.all([
       prisma.task.findMany({
-        where: { userId },
+        where: { userId, cancelledAt: null },
         orderBy: { taskDate: "desc" },
         take: 10,
       }),
-      prisma.task.count({ where: { userId, status: "DONE", reviewStatus: "APPROVED" } }),
-      prisma.task.count({ where: { userId, status: "PENDING" } }),
-      prisma.task.count({ where: { userId, status: "IN_PROGRESS" } }),
-      prisma.task.count({ where: { userId } }),
+      prisma.task.count({ where: { userId, cancelledAt: null, status: "DONE", reviewStatus: "APPROVED" } }),
+      prisma.task.count({ where: { userId, cancelledAt: null, status: "PENDING" } }),
+      prisma.task.count({ where: { userId, cancelledAt: null, status: "IN_PROGRESS" } }),
+      prisma.task.count({ where: { userId, cancelledAt: null } }),
       getMemberGoalProgress(userId, session!.user.departmentId),
       prisma.task.findMany({
-        where: { userId, taskDate: { gte: thirtyDaysAgo, lte: todayInTimeZone() } },
+        where: { userId, cancelledAt: null, taskDate: { gte: thirtyDaysAgo, lte: todayInTimeZone() } },
         select: { taskDate: true },
       }),
-      prisma.task.count({ where: { userId, status: "DONE", reviewStatus: "APPROVED", taskDate: { gte: thisMonth.start, lte: thisMonth.end } } }),
-      prisma.task.count({ where: { userId, status: "DONE", reviewStatus: "APPROVED", taskDate: { gte: lastMonth.start, lte: lastMonth.end } } }),
+      prisma.task.count({ where: { userId, cancelledAt: null, status: "DONE", reviewStatus: "APPROVED", taskDate: { gte: thisMonth.start, lte: thisMonth.end } } }),
+      prisma.task.count({ where: { userId, cancelledAt: null, status: "DONE", reviewStatus: "APPROVED", taskDate: { gte: lastMonth.start, lte: lastMonth.end } } }),
     ]);
 
   const heroTrend =

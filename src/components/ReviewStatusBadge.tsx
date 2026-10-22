@@ -6,7 +6,8 @@ const styles: Record<string, string> = {
   APPROVED: "bg-emerald-50 text-emerald-700 ring-emerald-600/15",
 };
 const labels: Record<string, string> = { SUBMITTED: "Awaiting review", CHANGES_REQUESTED: "Changes requested", APPROVED: "Approved" };
-export default function ReviewStatusBadge({ reviewStatus, status }: { reviewStatus?: string; status: string }) {
+export default function ReviewStatusBadge({ reviewStatus, status, cancelled = false }: { reviewStatus?: string; status: string; cancelled?: boolean }) {
+  if (cancelled) return <span className="badge bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-500/15">Cancelled</span>;
   if (!reviewStatus || reviewStatus === "DRAFT") return <StatusBadge status={status} />;
   return <span className={`badge whitespace-nowrap ring-1 ring-inset ${styles[reviewStatus] ?? "bg-slate-100 text-slate-600"}`}>{labels[reviewStatus] ?? reviewStatus}</span>;
 }

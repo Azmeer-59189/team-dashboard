@@ -15,7 +15,7 @@ export function taskWhere(params: URLSearchParams, scope: Scope): Prisma.TaskWhe
   if ((from && !isValidDate(from)) || (to && !isValidDate(to)) || (from && to && from > to)) throw new BusinessError("Invalid date range");
   if (search && search.length > 200) throw new BusinessError("Search must be under 200 characters");
   if (scope.isLead && !scope.departmentId) throw new BusinessError("Department required", 403);
-  const where: Prisma.TaskWhereInput = {};
+  const where: Prisma.TaskWhereInput = params.get("cancelled") === "true" ? { cancelledAt: { not: null } } : { cancelledAt: null };
   if (!scope.isAdmin && !scope.isLead) where.userId = scope.userId;
   else {
     if (scope.isLead) where.departmentId = scope.departmentId;

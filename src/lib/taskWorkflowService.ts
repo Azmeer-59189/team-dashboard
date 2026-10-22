@@ -11,6 +11,7 @@ export async function applyTaskAction(tx: Prisma.TransactionClient, actorId: str
   if (!actor || actor.archivedAt) throw new BusinessError("Unauthorized", 401);
   const task = await tx.task.findUnique({ where: { id: taskId }, include: { user: { select: { id: true, role: true, departmentId: true } } } });
   if (!task) throw new BusinessError("Task not found", 404);
+  if (task.cancelledAt) throw new BusinessError("Cancelled assignments cannot be changed", 409);
   const scope = getScope({ user: { id: actor.id, role: actor.role, departmentId: actor.departmentId } } as Session);
   const patch = taskTransition(task, scope, task.user, action, note);
   if (task.version !== version) throw new BusinessError("This task changed. Refresh and try again.", 409);

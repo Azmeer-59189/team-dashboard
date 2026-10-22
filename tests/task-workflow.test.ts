@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { PGlite, type PGliteInterface } from "@electric-sql/pglite";
 import type { Prisma } from "@prisma/client";
 import { applyTaskAction } from "../src/lib/taskWorkflowService";
+import { manageAssignment } from "../src/lib/assignmentManagement";
 
 // Bridge the small transaction surface used by the real workflow service to the
 // PostgreSQL test engine. Permission and state-transition logic is not mocked.
@@ -16,6 +17,7 @@ function adapter(sql: Pick<PGliteInterface, "query">) {
   };
   return {
     user: { findUnique: ({ where }: any) => findUser(where.id) },
+    objective: { findFirst: async ({ where }: any) => (await sql.query('SELECT * FROM "Objective" WHERE "id"=$1 AND "departmentId"=$2', [where.id, where.departmentId])).rows[0] ?? null },
     task: {
       findUnique: ({ where }: any) => findTask(where.id),
       update: async ({ where, data }: any) => {
@@ -59,6 +61,7 @@ test("assignment review lifecycle against PostgreSQL", async (t) => {
     await db.exec(`ALTER TABLE "Task" ADD COLUMN "assignedById" TEXT, ADD COLUMN "assignedByName" TEXT;
       UPDATE "Task" SET "assignedById"='lead', "assignedByName"='Original lead' WHERE "id"='legacy';`);
     await db.exec(await readFile("prisma/migrations/20261022000000_task_assignments_reviews/migration.sql", "utf8"));
+    await db.exec(await readFile("prisma/migrations/20261022010000_assignment_management/migration.sql", "utf8"));
     await db.exec(`INSERT INTO "Task" ("id","userId","departmentId","type","content","taskDate","dueDate","assignedById","assignedByName","assignedAt","updatedAt") VALUES
       ('assigned','member','design','TEXT','Deliver a report','2026-10-22','2026-10-25','lead','Lead',now(),now());`);
     const act = (actor: string, action: Parameters<typeof applyTaskAction>[3], version: number, note = "") => db.transaction((tx) => applyTaskAction(adapter(tx), actor, "assigned", action, version, note));
@@ -114,6 +117,44 @@ test("assignment review lifecycle against PostgreSQL", async (t) => {
       await assert.rejects(db.exec(`UPDATE "Task" SET "status"='DONE' WHERE "id"='assigned'`), /check constraint/i);
       await assert.rejects(db.exec(`UPDATE "Task" SET "status"='DONE',"reviewStatus"='APPROVED',"reviewedById"='member',"reviewedAt"=now() WHERE "id"='assigned'`), /check constraint/i);
       await assert.rejects(db.exec(`UPDATE "Task" SET "submissionText"=NULL WHERE "id"='assigned'`), /check constraint/i);
+    });
+    const manage = (actor: string, body: Record<string, unknown>, id = "assigned") => db.transaction((tx) => manageAssignment(adapter(tx), actor, id, body));
+    await t.test("scoped managers can edit returned assignments; members and outsiders cannot", async () => {
+      await act("lead", "request_changes", 7, "Update the report");
+      await assert.rejects(manage("member", { action: "edit", version: 8, reason: "Extend deadline", due_date: "2026-11-01" }), /cannot manage/);
+      await assert.rejects(manage("outsider", { action: "edit", version: 8, reason: "Extend deadline", due_date: "2026-11-01" }), /cannot manage/);
+      const saved = await manage("lead", { action: "edit", version: 8, reason: "Extend deadline", due_date: "2026-11-01", content: "Updated brief" });
+      assert.equal(saved.content, "Updated brief"); assert.equal(saved.version, 9);
+      await assert.rejects(manage("lead", { action: "edit", version: 8, reason: "Stale change", due_date: "2026-11-02" }), /changed/);
+    });
+    await t.test("reassignment validates the new owner and clears previous deliverables", async () => {
+      await db.exec(`INSERT INTO "User" ("id","fullName","email","passwordHash","role","departmentId") VALUES
+        ('member2','Second member','m2@example.com','hash','MEMBER','design'),
+        ('otherMember','Other member','m3@example.com','hash','MEMBER','other');`);
+      await assert.rejects(manage("lead", { action: "reassign", version: 9, reason: "Move work", user_id: "otherMember" }), /cannot assign/);
+      await assert.rejects(manage("lead", { action: "reassign", version: 9, reason: "Move work", user_id: "lead" }), /cannot assign/);
+      const saved = await manage("lead", { action: "reassign", version: 9, reason: "Balance workload", user_id: "member2" });
+      assert.equal(saved.userId, "member2"); assert.equal(saved.reviewStatus, "DRAFT"); assert.equal(saved.submissionText, null);
+      assert.equal(saved.reviewFeedback, null); assert.equal(saved.version, 10);
+      await assert.rejects(act("member", "submit", 10, "Former owner's work"), /Only the task owner/);
+      await act("member2", "submit", 10, "New assignee's deliverable");
+    });
+    await t.test("cancellation preserves the task, history and reason, and blocks future submissions", async () => {
+      const saved = await manage("lead", { action: "cancel", version: 11, reason: "Project discontinued" });
+      assert.ok(saved.cancelledAt); assert.equal(saved.cancellationReason, "Project discontinued"); assert.equal(saved.cancelledById, "lead");
+      assert.equal(await countCredits(), 0);
+      await assert.rejects(act("member2", "submit", 12, "Try again"), /Cancelled/);
+      await assert.rejects(manage("lead", { action: "edit", version: 12, reason: "Try again", content: "Changed" }), /cancelled/);
+      await assert.rejects(db.exec(`UPDATE "Task" SET "status"='IN_PROGRESS' WHERE "id"='assigned'`), /check constraint/i);
+      assert.equal((await db.query<{ count: number }>(`SELECT count(*)::int AS count FROM "AuditLog" WHERE "targetId"='assigned' AND "action" IN ('task.assignment_edit','task.reassign','task.cancel')`)).rows[0].count, 3);
+    });
+    await t.test("assignment date changes check both source and destination month locks", async () => {
+      await db.exec(`INSERT INTO "Task" ("id","userId","departmentId","type","content","taskDate","dueDate","assignedById","assignedByName","assignedAt","updatedAt") VALUES
+        ('datechange','member','design','TEXT','Open work','2026-10-22','2026-12-01','lead','Lead',now(),now());
+        INSERT INTO "MonthlyReport" ("periodLabel","finalizedBy","rows") VALUES ('2026-11','admin','[]');`);
+      await assert.rejects(manage("lead", { action: "edit", version: 0, reason: "Move to next month", task_date: "2026-11-01" }, "datechange"), /finalized/);
+      await db.exec(`DELETE FROM "MonthlyReport" WHERE "periodLabel"='2026-11'; INSERT INTO "MonthlyReport" ("periodLabel","finalizedBy","rows") VALUES ('2026-10','admin','[]');`);
+      await assert.rejects(manage("lead", { action: "edit", version: 0, reason: "Move out of closed month", task_date: "2026-11-01" }, "datechange"), /finalized/);
     });
   } finally { await db.close(); }
 });

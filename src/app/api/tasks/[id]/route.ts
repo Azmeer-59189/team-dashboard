@@ -70,13 +70,14 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     await serializable(async (tx) => {
       const current = await tx.task.findUnique({ where: { id: params.id } });
       if (!current) throw new BusinessError("Task not found", 404);
+      if (current.cancelledAt) throw new BusinessError("Cancelled assignments are read-only", 409);
       if (session.user.role !== "ADMIN" && current.userId !== session.user.id) throw new BusinessError("Forbidden", 403);
       if (current.version !== existing.version || (updates.version !== undefined && updates.version !== current.version)) {
         throw new BusinessError("This task changed. Refresh and try again.", 409);
       }
       if (["SUBMITTED", "APPROVED"].includes(current.reviewStatus)) throw new BusinessError("Submitted and approved tasks must use the review workflow", 409);
-      if (current.assignedById && session.user.id === current.userId && Object.keys(updates).some((key) => !["status", "version"].includes(key))) {
-        throw new BusinessError("Assignment details are managed by your manager. Submit your work through the review form.", 403);
+      if (current.assignedById && (session.user.id !== current.userId || Object.keys(updates).some((key) => !["status", "version"].includes(key)))) {
+        throw new BusinessError("Use assignment management to change an assignment, or the review workflow to submit work.", 403);
       }
       await assertMonthsOpen(tx, [current.taskDate, patch.taskDate instanceof Date ? patch.taskDate : current.taskDate]);
       const nextStatus = patch.status ?? current.status;
@@ -102,9 +103,10 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
     await serializable(async (tx) => {
       const current = await tx.task.findUnique({ where: { id: params.id } });
       if (!current) throw new BusinessError("Task not found", 404);
+      if (current.cancelledAt) throw new BusinessError("Cancelled assignments are read-only", 409);
       if (session.user.role !== "ADMIN" && current.userId !== session.user.id) throw new BusinessError("Forbidden", 403);
       if (["SUBMITTED", "APPROVED"].includes(current.reviewStatus)) throw new BusinessError("Reopen or return this task before deleting it", 409);
-      if (current.assignedById && current.userId === session.user.id) throw new BusinessError("Only an administrator can remove an assigned task", 403);
+      if (current.assignedById) throw new BusinessError("Cancel assignments instead of deleting their history", 409);
       await assertMonthsOpen(tx, [current.taskDate]);
       await tx.task.delete({ where: { id: current.id } });
       await audit(tx, { id: session.user.id, name: session.user.name ?? "Member" }, "task.delete", current.id, current.content.slice(0, 100), { before: current });

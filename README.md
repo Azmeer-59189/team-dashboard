@@ -1,5 +1,7 @@
 # Team Dashboard
 
+Release readiness checks and assignment editing/reassignment/cancellation are documented in [DEPLOYMENT.md](./DEPLOYMENT.md). This release requires migration `20261022010000_assignment_management` before production builds will pass.
+
 Task assignment and approval workflow: see [TASK-REVIEWS.md](./TASK-REVIEWS.md) for usage, permissions, API details, and the new migration required before deployment.
 
 > **Backend upgrade:** Follow [BACKEND.md](./BACKEND.md) before running or deploying this version. Existing databases need migration baselining and `npm run db:deploy`; `db push` does not apply the required history backfills. The older setup instructions below predate this migration workflow.

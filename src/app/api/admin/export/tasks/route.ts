@@ -47,6 +47,9 @@ export async function GET(request: Request) {
     "Review Feedback",
     "Reviewed By",
     "Reviewed At",
+    "Cancelled At",
+    "Cancelled By",
+    "Cancellation Reason",
   ];
   const encoder = new TextEncoder();
   let cursor: string | undefined;
@@ -88,6 +91,9 @@ export async function GET(request: Request) {
     t.reviewFeedback ?? "",
     t.reviewedByName ?? "",
     t.reviewedAt?.toISOString() ?? "",
+    t.cancelledAt?.toISOString() ?? "",
+    t.cancelledByName ?? "",
+    t.cancellationReason ?? "",
   ]);
 
         if (rows.length) controller.enqueue(encoder.encode(rows.map((r) => r.map((c) => csvEscape(String(c))).join(",")).join("\r\n") + "\r\n"));

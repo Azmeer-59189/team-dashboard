@@ -10,7 +10,7 @@ import PageHeader from "@/components/PageHeader";
 import TaskTable from "@/components/TaskTable";
 import AssignTaskForm from "@/components/AssignTaskForm";
 
-const filters: Record<string, string> = { SUBMITTED: "Awaiting review", DRAFT: "Not submitted", CHANGES_REQUESTED: "Changes requested", APPROVED: "Approved", ALL: "All work" };
+const filters: Record<string, string> = { SUBMITTED: "Awaiting review", DRAFT: "Not submitted", CHANGES_REQUESTED: "Changes requested", APPROVED: "Approved", CANCELLED: "Cancelled", ALL: "All active work" };
 export default async function AssignmentsPage({ searchParams }: { searchParams: { state?: string; after?: string; q?: string } }) {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -22,8 +22,8 @@ export default async function AssignmentsPage({ searchParams }: { searchParams: 
     userId: { not: session.user.id },
     ...(scope.isLead ? { departmentId: scope.departmentId, user: { departmentId: scope.departmentId, role: "MEMBER" } } : {}),
   };
-  const where: Prisma.TaskWhereInput = { AND: [base,
-    ...(state === "ALL" ? [] : [{ reviewStatus: state as "SUBMITTED" | "DRAFT" | "CHANGES_REQUESTED" | "APPROVED" }]),
+  const where: Prisma.TaskWhereInput = { AND: [base, state === "CANCELLED" ? { cancelledAt: { not: null } } : { cancelledAt: null },
+    ...(["ALL", "CANCELLED"].includes(state) ? [] : [{ reviewStatus: state as "SUBMITTED" | "DRAFT" | "CHANGES_REQUESTED" | "APPROVED" }]),
     ...(search ? [{ OR: [{ content: { contains: search, mode: "insensitive" as const } }, { user: { fullName: { contains: search, mode: "insensitive" as const } } }] }] : []),
     ...(searchParams.after ? [{ id: { lt: searchParams.after } }] : []),
   ] };
@@ -33,7 +33,7 @@ export default async function AssignmentsPage({ searchParams }: { searchParams: 
     prisma.objective.findMany({ where: scope.isLead ? { departmentId: scope.departmentId! } : {}, select: { id: true, title: true, departmentId: true }, orderBy: { title: "asc" } }),
     prisma.task.findMany({ where, orderBy: { id: "desc" }, take: 51,
       include: { user: { select: { fullName: true } }, department: { select: { name: true } } } }),
-    prisma.task.count({ where: { AND: [base, { reviewStatus: "SUBMITTED" }] } }),
+    prisma.task.count({ where: { AND: [base, { reviewStatus: "SUBMITTED", cancelledAt: null }] } }),
   ]);
   const page = tasks.slice(0, 50);
   function pageUrl(after?: string) {
@@ -51,7 +51,7 @@ export default async function AssignmentsPage({ searchParams }: { searchParams: 
       <button className="btn-secondary">Apply filters</button>
     </form>
     <section className="card"><h2 className="card-title mb-4">{filters[state]}</h2>
-      <TaskTable tasks={page.map(formatTask)} showOwner reviewable viewerId={session.user.id} />
+      <TaskTable tasks={page.map(formatTask)} showOwner reviewable viewerId={session.user.id} assignmentMembers={members.map((m) => ({ id: m.id, fullName: m.fullName }))} />
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-xs text-muted">
         <p>Showing {page.length} tasks. Your own work is managed in My Tasks.</p>
         <div className="flex gap-3">{searchParams.after && <Link className="btn-secondary" href={pageUrl()}>Newest tasks</Link>}{tasks.length > 50 && <Link className="btn-secondary" href={pageUrl(page[page.length - 1].id)}>Next page</Link>}</div>

@@ -84,7 +84,7 @@ test("editing either the old or new month of a moved task checks report locks", 
 });
 test("task query scoping cannot be overridden by member-supplied filters", () => {
   const member = { userId: "m", departmentId: "design", isAdmin: false, isLead: false };
-  assert.deepEqual(taskWhere(new URLSearchParams("member=someone-else&department=other"), member), { userId: "m" });
+  assert.deepEqual(taskWhere(new URLSearchParams("member=someone-else&department=other"), member), { cancelledAt: null, userId: "m" });
   const lead = { ...member, isLead: true };
   assert.equal(taskWhere(new URLSearchParams("department=other"), lead).departmentId, "design");
   assert.throws(() => taskWhere(new URLSearchParams(), { ...lead, departmentId: null }), /Department/);

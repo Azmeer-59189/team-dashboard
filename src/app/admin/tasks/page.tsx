@@ -24,7 +24,7 @@ export default async function AdminTasksPage({
     }),
   ]);
 
-  const where: any = {};
+  const where: any = { cancelledAt: null };
   if (scope.isLead) where.departmentId = scope.departmentId;
   else if (searchParams.department) where.departmentId = searchParams.department;
 

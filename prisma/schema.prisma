@@ -181,6 +181,10 @@ model Task {
   reviewedAt     DateTime?
   legacyApproved Boolean       @default(false)
   legacyAssigned Boolean       @default(false)
+  cancelledAt    DateTime?
+  cancelledById  String?
+  cancelledByName String?
+  cancellationReason String?   @db.Text
   completedAt    DateTime?
   version        Int           @default(0)
   category       String?
@@ -205,6 +209,7 @@ model Task {
   @@index([departmentId, taskDate])
   @@index([objectiveId, status, taskDate])
   @@index([departmentId, reviewStatus, taskDate])
+  @@index([cancelledAt])
 }
 
 // Immutable scope snapshots survive deleting the current goal or department.

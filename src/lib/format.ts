@@ -37,6 +37,10 @@ export function formatTask(task: TaskWithRelations) {
   return {
     id: task.id,
     version: task.version,
+    cancelled_at: task.cancelledAt?.toISOString() ?? null,
+    cancelled_by: task.cancelledByName,
+    cancellation_reason: task.cancellationReason,
+    objective_id: task.objectiveId,
     user_id: task.userId,
     review_status: task.reviewStatus,
     assigned_by: task.assignedByName,

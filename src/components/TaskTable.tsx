@@ -9,6 +9,10 @@ import { Icon } from "./icons";
 export type TaskRow = {
   id: string;
   version: number;
+  cancelled_at?: string | null;
+  cancelled_by?: string | null;
+  cancellation_reason?: string | null;
+  objective_id?: string | null;
   user_id: string;
   review_status: string;
   assigned_by?: string | null;
@@ -115,12 +119,14 @@ export default function TaskTable({
   editable = false,
   reviewable = false,
   viewerId,
+  assignmentMembers,
 }: {
   tasks: TaskRow[];
   showOwner?: boolean;
   editable?: boolean;
   reviewable?: boolean;
   viewerId?: string;
+  assignmentMembers?: { id: string; fullName: string }[];
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -154,13 +160,13 @@ export default function TaskTable({
   function statusControl(t: TaskRow) {
     const mode = editable ? "owner" : reviewable && t.user_id !== viewerId ? "reviewer" : "read";
     return <div className="flex flex-wrap items-center gap-2">
-      <ReviewStatusBadge reviewStatus={t.review_status} status={t.status} />
-      <TaskWorkflowPanel task={t} mode={mode} />
+      <ReviewStatusBadge reviewStatus={t.review_status} status={t.status} cancelled={!!t.cancelled_at} />
+      <TaskWorkflowPanel task={t} mode={mode} assignmentMembers={assignmentMembers} />
     </div>;
   }
 
   function deleteButton(t: TaskRow) {
-    if (t.assigned_by_id || ["SUBMITTED", "APPROVED"].includes(t.review_status)) return null;
+    if (t.cancelled_at || t.assigned_by_id || ["SUBMITTED", "APPROVED"].includes(t.review_status)) return null;
     return (
       <button onClick={() => deleteTask(t.id)} className="btn-danger-ghost" aria-label="Delete task" title="Delete task">
         <Icon name="trash" size={14} />

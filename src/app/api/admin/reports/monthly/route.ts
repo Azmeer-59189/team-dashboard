@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       const scores = await getCompositeScores(members, end, tx);
       const [goals, counts, ratings] = await Promise.all([
         applicableGoals(members, end, tx),
-        tx.task.groupBy({ by: ["userId"], where: { userId: { in: members.map((m) => m.id) }, status: "DONE", reviewStatus: "APPROVED", taskDate: { gte: start, lte: end } }, _count: { _all: true } }),
+        tx.task.groupBy({ by: ["userId"], where: { userId: { in: members.map((m) => m.id) }, cancelledAt: null, status: "DONE", reviewStatus: "APPROVED", taskDate: { gte: start, lte: end } }, _count: { _all: true } }),
         tx.manualScore.findMany({ where: { userId: { in: members.map((m) => m.id) }, periodLabel: body.month, supersededAt: null } }),
       ]);
       const rows = members.map((member) => ({ member, score: scores.get(member.id)!, evidence: {

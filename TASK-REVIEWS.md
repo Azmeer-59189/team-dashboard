@@ -16,7 +16,7 @@ The new management page supports workflow filtering, person/task search, and 50-
 - Admins may assign/review other accounts. An administrator's own work requires a different administrator's approval.
 - Leads may assign/review ordinary members in their own department. Both the task's department and the assignee's current department must match. Lead/admin work requires an Admin's review.
 - Nobody assigns work to themselves or reviews their own work. Archived users cannot receive new assignments.
-- Only the owner starts, submits or reopens their task. An assignee cannot rewrite the assigned brief or deadline. Manager-authored changes to draft task details remain available to Admins through the existing task update API. Lead assignment editing/reassignment is not part of this release.
+- Only the owner starts, submits or reopens their task. An assignee cannot rewrite the assigned brief or deadline. Scoped managers can edit, reassign or cancel through **Manage assignment** in task details; the generic task update/delete API cannot bypass this reason-required workflow.
 - Submitted/approved tasks cannot be silently edited or deleted through the old update endpoint. A manager returns submitted work with feedback; an owner explicitly reopens approved work before editing it.
 - Only approval sets **Done**. Awaiting-review and changes-requested tasks remain **In progress**, with a more specific workflow badge. Goals, composites, objective progress, and completion totals count only approved Done tasks.
 - Assignment date remains the KPI attribution date. Submission records actual completion separately; approval records the decision time. There is no partial credit, and the existing 65/35 scoring formula is unchanged.
