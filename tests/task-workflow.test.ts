@@ -54,6 +54,10 @@ test("assignment review lifecycle against PostgreSQL", async (t) => {
       ('admin','Admin','a@example.com','hash','ADMIN',NULL);
       INSERT INTO "Task" ("id","userId","departmentId","type","content","taskDate","status","updatedAt") VALUES
       ('legacy','member','design','TEXT','Legacy completed work','2026-10-01','DONE',now());`);
+    // Reproduce the live schema drift: identity columns and assignments existed
+    // before the review workflow, without its timestamp/deadline requirements.
+    await db.exec(`ALTER TABLE "Task" ADD COLUMN "assignedById" TEXT, ADD COLUMN "assignedByName" TEXT;
+      UPDATE "Task" SET "assignedById"='lead', "assignedByName"='Original lead' WHERE "id"='legacy';`);
     await db.exec(await readFile("prisma/migrations/20261022000000_task_assignments_reviews/migration.sql", "utf8"));
     await db.exec(`INSERT INTO "Task" ("id","userId","departmentId","type","content","taskDate","dueDate","assignedById","assignedByName","assignedAt","updatedAt") VALUES
       ('assigned','member','design','TEXT','Deliver a report','2026-10-22','2026-10-25','lead','Lead',now(),now());`);
@@ -63,6 +67,8 @@ test("assignment review lifecycle against PostgreSQL", async (t) => {
     await t.test("migration preserves old completion credits without inventing a reviewer", async () => {
       const row = (await db.query<any>(`SELECT * FROM "Task" WHERE "id"='legacy'`)).rows[0];
       assert.equal(row.reviewStatus, "APPROVED"); assert.equal(row.legacyApproved, true); assert.equal(row.reviewedById, null);
+      assert.equal(row.assignedById, "lead"); assert.equal(row.assignedByName, "Original lead");
+      assert.equal(row.legacyAssigned, true); assert.equal(row.assignedAt, null); assert.equal(row.dueDate, null);
     });
     await t.test("an owner starts and submits; awaiting review has no KPI credit", async () => {
       await act("member", "start", 0);

@@ -180,6 +180,7 @@ model Task {
   reviewedByName String?
   reviewedAt     DateTime?
   legacyApproved Boolean       @default(false)
+  legacyAssigned Boolean       @default(false)
   completedAt    DateTime?
   version        Int           @default(0)
   category       String?

@@ -37,6 +37,8 @@ Do not repeat baseline resolution on an already migrated database. Do not use `d
 
 Existing Done tasks are marked as **legacy approvals**, retaining their KPI credit without inventing a reviewer or completion timestamp. Existing Pending/In-progress tasks become drafts. Already-finalized monthly reports stay unchanged.
 
+The migration also accepts existing nullable text `assignedById`/`assignedByName` columns. Existing assignment identities are retained and marked `legacyAssigned`, allowing their original unknown timestamps/deadlines to stay null. New assignments still require full assignment details and a deadline. If the earlier version failed on these duplicate columns, verify that the transaction rolled back (review columns/type are absent), mark that failed attempt rolled back with `npx prisma migrate resolve --rolled-back 20261022000000_task_assignments_reviews`, then run `npm run db:deploy` using this corrected file. Do not mark the migration applied without executing its SQL.
+
 ## Backend endpoints
 
 ```text
