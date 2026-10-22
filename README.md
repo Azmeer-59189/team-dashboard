@@ -1,5 +1,7 @@
 # Team Dashboard
 
+Task assignment and approval workflow: see [TASK-REVIEWS.md](./TASK-REVIEWS.md) for usage, permissions, API details, and the new migration required before deployment.
+
 > **Backend upgrade:** Follow [BACKEND.md](./BACKEND.md) before running or deploying this version. Existing databases need migration baselining and `npm run db:deploy`; `db push` does not apply the required history backfills. The older setup instructions below predate this migration workflow.
 
 ## Reliability improvements

@@ -26,7 +26,7 @@ export default async function AdminOverview({
   // Hero stat: tasks done this month vs last month, org-wide (or dept-wide for a lead).
   // Deliberately independent of the filter bar below - this is the one headline number,
   // the filtered stats/charts further down are the detail view.
-  const heroWhere: any = { status: "DONE" };
+  const heroWhere: any = { status: "DONE", reviewStatus: "APPROVED" };
   if (scope.isLead) heroWhere.departmentId = scope.departmentId;
   const thisMonth = getPeriodRange("MONTHLY");
   const lastMonthRef = new Date(thisMonth.start);

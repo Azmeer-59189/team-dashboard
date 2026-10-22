@@ -31,7 +31,7 @@ export default async function MemberDashboard() {
         orderBy: { taskDate: "desc" },
         take: 10,
       }),
-      prisma.task.count({ where: { userId, status: "DONE" } }),
+      prisma.task.count({ where: { userId, status: "DONE", reviewStatus: "APPROVED" } }),
       prisma.task.count({ where: { userId, status: "PENDING" } }),
       prisma.task.count({ where: { userId, status: "IN_PROGRESS" } }),
       prisma.task.count({ where: { userId } }),
@@ -40,8 +40,8 @@ export default async function MemberDashboard() {
         where: { userId, taskDate: { gte: thirtyDaysAgo, lte: todayInTimeZone() } },
         select: { taskDate: true },
       }),
-      prisma.task.count({ where: { userId, status: "DONE", taskDate: { gte: thisMonth.start, lte: thisMonth.end } } }),
-      prisma.task.count({ where: { userId, status: "DONE", taskDate: { gte: lastMonth.start, lte: lastMonth.end } } }),
+      prisma.task.count({ where: { userId, status: "DONE", reviewStatus: "APPROVED", taskDate: { gte: thisMonth.start, lte: thisMonth.end } } }),
+      prisma.task.count({ where: { userId, status: "DONE", reviewStatus: "APPROVED", taskDate: { gte: lastMonth.start, lte: lastMonth.end } } }),
     ]);
 
   const heroTrend =

@@ -1,3 +1,4 @@
+import { applyTaskAction } from "@/lib/taskWorkflowService";
 import { NextResponse } from "next/server";
 import { serverError } from "@/lib/apiError";
 import { prisma } from "@/lib/prisma";
@@ -90,7 +91,7 @@ export async function POST(request: Request) {
         throw new BusinessError("Objective must belong to your department");
       }
     }
-    const task = await tx.task.create({
+    let task = await tx.task.create({
       data: {
         userId: session.user.id,
         departmentId: session.user.departmentId,
@@ -98,8 +99,8 @@ export async function POST(request: Request) {
         type: typeToDb(type),
         content: content.trim(),
         taskDate: new Date(task_date),
-        status: statusToDb(status ?? "pending"),
-        completedAt: status === "done" ? new Date() : null,
+        status: status === "done" ? "PENDING" : statusToDb(status ?? "pending"),
+        completedAt: null,
         category: category || null,
         chapter: chapter || null,
         campaign: campaign || null,
@@ -110,6 +111,7 @@ export async function POST(request: Request) {
       },
     });
     await audit(tx, { id: session.user.id, name: session.user.name ?? "Member" }, "task.create", task.id, task.content.slice(0, 100), { after: task });
+    if (status === "done") task = await applyTaskAction(tx, session.user.id, task.id, "submit", task.version, content.trim());
     return task;
     });
     return NextResponse.json({ task });

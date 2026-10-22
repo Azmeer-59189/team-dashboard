@@ -36,6 +36,8 @@ New SQL check constraints use `NOT VALID` so legacy bad records remain available
 
 ## Performance rules
 
+**Task approvals:** New completed work must be submitted and approved by a manager. The existing task-date attribution and 65/35 formula still apply, but every task-based score now requires both `status = DONE` and `reviewStatus = APPROVED`. The task-review migration preserves existing Done tasks as legacy approvals and does not change finalized reports.
+
 - One goal per owner and period remains the product rule. An individual override wins **before** checking its category. A Behavioural override therefore does not fall back to a departmental Core goal for the composite score.
 - `Goal` is the editable definition; `GoalRevision` records targets effective at calendar-period boundaries. Current-period edits replace that period's revision, and future revisions do not change prior periods.
 - `POST /api/admin/goals` accepts optional `effectiveFrom: "YYYY-MM-DD"`. It must be the first day of the current or a future weekly/monthly/annual period. Without it, the change applies to the current period. A scheduled goal may appear in the goals management list before it affects progress; calculations read the effective revision.

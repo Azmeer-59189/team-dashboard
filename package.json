@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test:db": "tsx --test tests/database.test.ts",
+    "test:db": "tsx --test tests/*.test.ts",
     "db:deploy": "prisma migrate deploy",
     "test": "tsx --test src/lib/*.test.ts",
     "dev": "next dev",

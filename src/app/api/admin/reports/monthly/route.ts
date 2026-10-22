@@ -37,6 +37,8 @@ export async function POST(request: Request) {
       if (existing) return existing;
       const reference = new Date(`${body.month}-01T00:00:00Z`);
       const { start, end } = getPeriodRange("MONTHLY", reference);
+      const pendingReviews = await tx.task.count({ where: { taskDate: { gte: start, lte: end }, reviewStatus: "SUBMITTED" } });
+      if (pendingReviews > 0) throw new BusinessError("Review all submitted tasks before finalizing this month", 409);
       const cutoff = new Date(end.getTime() + 86400000);
       const candidates = await tx.user.findMany({ where: { createdAt: { lt: cutoff } }, select: { id: true, fullName: true, departmentId: true, department: { select: { name: true } } } });
       const historical = await assignmentsAt(candidates, end, tx);
@@ -48,7 +50,7 @@ export async function POST(request: Request) {
       const scores = await getCompositeScores(members, end, tx);
       const [goals, counts, ratings] = await Promise.all([
         applicableGoals(members, end, tx),
-        tx.task.groupBy({ by: ["userId"], where: { userId: { in: members.map((m) => m.id) }, status: "DONE", taskDate: { gte: start, lte: end } }, _count: { _all: true } }),
+        tx.task.groupBy({ by: ["userId"], where: { userId: { in: members.map((m) => m.id) }, status: "DONE", reviewStatus: "APPROVED", taskDate: { gte: start, lte: end } }, _count: { _all: true } }),
         tx.manualScore.findMany({ where: { userId: { in: members.map((m) => m.id) }, periodLabel: body.month, supersededAt: null } }),
       ]);
       const rows = members.map((member) => ({ member, score: scores.get(member.id)!, evidence: {

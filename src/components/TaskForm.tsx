@@ -153,10 +153,12 @@ export default function TaskForm() {
           <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>
             <option value="pending">Pending</option>
             <option value="in-progress">In progress</option>
-            <option value="done">Done</option>
+            <option value="done">Submit for review</option>
           </select>
         </div>
       </div>
+
+      <p className="text-xs text-muted">Completed work goes to a manager for approval before it counts toward KPIs.</p>
 
       <details className="disclosure rounded-xl border border-hairline bg-slate-50/60 px-4 py-3">
         <summary>More details (optional)</summary>

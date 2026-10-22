@@ -18,7 +18,7 @@ export async function getMembersGoalProgress(members: { id: string; departmentId
   await Promise.all((["WEEKLY", "MONTHLY", "ANNUAL"] as Period[]).map(async (period) => {
     const { start, end } = getPeriodRange(period, reference);
     const counts = await prisma.task.groupBy({ by: ["userId"], where: {
-      userId: { in: members.map((m) => m.id) }, status: "DONE", taskDate: { gte: start, lte: end },
+      userId: { in: members.map((m) => m.id) }, status: "DONE", reviewStatus: "APPROVED", taskDate: { gte: start, lte: end },
     }, _count: { _all: true } });
     const byUser = new Map(counts.map((c) => [c.userId, c._count._all]));
     for (const member of members) {

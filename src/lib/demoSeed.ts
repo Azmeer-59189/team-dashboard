@@ -155,6 +155,8 @@ export async function seedDemoData() {
           content,
           taskDate: date,
           status: randomStatus(i) as any,
+          reviewStatus: randomStatus(i) === "DONE" ? "APPROVED" : "DRAFT",
+          legacyApproved: randomStatus(i) === "DONE",
           category: i % 3 === 0 ? "Social Media" : i % 3 === 1 ? "Blog" : "Email",
           chapter: i % 2 === 0 ? "Europe" : "USA",
           campaign: i % 5 === 0 ? "Winter Appeal" : null,

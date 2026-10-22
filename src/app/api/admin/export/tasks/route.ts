@@ -40,6 +40,13 @@ export async function GET(request: Request) {
     "Due Date",
     "Delivered Date",
     "Revision Rounds",
+    "Review Status",
+    "Assigned By",
+    "Submitted Work",
+    "Submitted At",
+    "Review Feedback",
+    "Reviewed By",
+    "Reviewed At",
   ];
   const encoder = new TextEncoder();
   let cursor: string | undefined;
@@ -74,6 +81,13 @@ export async function GET(request: Request) {
     t.dueDate ? t.dueDate.toISOString().slice(0, 10) : "",
     t.deliveredDate ? t.deliveredDate.toISOString().slice(0, 10) : "",
     t.revisionRounds ?? "",
+    t.reviewStatus,
+    t.assignedByName ?? "",
+    t.submissionText ?? "",
+    t.submittedAt?.toISOString() ?? "",
+    t.reviewFeedback ?? "",
+    t.reviewedByName ?? "",
+    t.reviewedAt?.toISOString() ?? "",
   ]);
 
         if (rows.length) controller.enqueue(encoder.encode(rows.map((r) => r.map((c) => csvEscape(String(c))).join(",")).join("\r\n") + "\r\n"));

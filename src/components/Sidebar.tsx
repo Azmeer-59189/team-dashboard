@@ -34,6 +34,7 @@ function navGroups(role: "admin" | "lead" | "member"): NavGroup[] {
       links: [
         { href: "/admin", label: "Overview", icon: "grid" },
         { href: "/admin/my-tasks", label: "My Tasks", icon: "check-square" },
+        { href: "/admin/assignments", label: "Assignments & reviews", icon: "clipboard" },
         { href: "/admin/tasks", label: "All Tasks", icon: "list" },
       ],
     },

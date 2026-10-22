@@ -20,8 +20,8 @@ export async function getObjectivesProgress(where: Prisma.ObjectiveWhereInput): 
   const { start, end } = getPeriodRange("MONTHLY");
   const [goals, doneGroups, taggedGroups] = await Promise.all([
     applicableGoals(members),
-    prisma.task.groupBy({ by: ["userId"], where: { userId: { in: members.map((m) => m.id) }, status: "DONE", taskDate: { gte: start, lte: end } }, _count: { _all: true } }),
-    prisma.task.groupBy({ by: ["objectiveId"], where: { objectiveId: { in: objectives.map((o) => o.id) }, status: "DONE", taskDate: { gte: start, lte: end } }, _count: { _all: true } }),
+    prisma.task.groupBy({ by: ["userId"], where: { userId: { in: members.map((m) => m.id) }, status: "DONE", reviewStatus: "APPROVED", taskDate: { gte: start, lte: end } }, _count: { _all: true } }),
+    prisma.task.groupBy({ by: ["objectiveId"], where: { objectiveId: { in: objectives.map((o) => o.id) }, status: "DONE", reviewStatus: "APPROVED", taskDate: { gte: start, lte: end } }, _count: { _all: true } }),
   ]);
   const done = new Map(doneGroups.map((g) => [g.userId, g._count._all]));
   const tagged = new Map(taggedGroups.map((g) => [g.objectiveId, g._count._all]));

@@ -26,6 +26,13 @@ enum TaskStatus {
   DONE
 }
 
+enum TaskReviewStatus {
+  DRAFT
+  SUBMITTED
+  CHANGES_REQUESTED
+  APPROVED
+}
+
 enum GoalPeriod {
   WEEKLY
   MONTHLY
@@ -162,6 +169,17 @@ model Task {
   content        String        @db.Text
   taskDate       DateTime      @db.Date
   status         TaskStatus    @default(PENDING)
+  reviewStatus   TaskReviewStatus @default(DRAFT)
+  assignedById   String?
+  assignedByName String?
+  assignedAt     DateTime?
+  submissionText String?       @db.Text
+  submittedAt    DateTime?
+  reviewFeedback String?       @db.Text
+  reviewedById   String?
+  reviewedByName String?
+  reviewedAt     DateTime?
+  legacyApproved Boolean       @default(false)
   completedAt    DateTime?
   version        Int           @default(0)
   category       String?
@@ -185,6 +203,7 @@ model Task {
   @@index([userId, status, taskDate])
   @@index([departmentId, taskDate])
   @@index([objectiveId, status, taskDate])
+  @@index([departmentId, reviewStatus, taskDate])
 }
 
 // Immutable scope snapshots survive deleting the current goal or department.

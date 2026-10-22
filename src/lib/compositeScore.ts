@@ -28,7 +28,7 @@ export async function getCompositeScores(members: { id: string; departmentId: st
   const { start, end } = getPeriodRange("MONTHLY", reference);
   const [goals, counts, ratings] = await Promise.all([
     applicableGoals(members, reference, db),
-    db.task.groupBy({ by: ["userId"], where: { userId, status: "DONE", taskDate: { gte: start, lte: end } }, _count: { _all: true } }),
+    db.task.groupBy({ by: ["userId"], where: { userId, status: "DONE", reviewStatus: "APPROVED", taskDate: { gte: start, lte: end } }, _count: { _all: true } }),
     db.manualScore.groupBy({ by: ["userId"], where: { userId, periodLabel, supersededAt: null }, _avg: { score: true }, _count: { _all: true } }),
   ]);
   const done = new Map(counts.map((c) => [c.userId, c._count._all]));

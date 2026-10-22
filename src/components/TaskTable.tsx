@@ -2,11 +2,22 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import StatusBadge from "./StatusBadge";
+import ReviewStatusBadge from "./ReviewStatusBadge";
+import TaskWorkflowPanel from "./TaskWorkflowPanel";
 import { Icon } from "./icons";
 
 export type TaskRow = {
   id: string;
+  version: number;
+  user_id: string;
+  review_status: string;
+  assigned_by?: string | null;
+  assigned_by_id?: string | null;
+  submission_text?: string | null;
+  review_feedback?: string | null;
+  reviewed_by?: string | null;
+  legacy_approved?: boolean;
+  due_date?: string | null;
   content: string;
   type: "text" | "link";
   task_date: string;
@@ -69,6 +80,9 @@ function TaskContent({ task }: { task: TaskRow }) {
           <span className="break-words font-medium text-ink">{task.content}</span>
         )}
         {task.category && <p className="mt-0.5 text-xs text-muted">{task.category}</p>}
+        {task.assigned_by && <p className="mt-1 text-xs text-muted">Assigned by {task.assigned_by}</p>}
+        {task.due_date && <p className="mt-1 text-xs text-muted">Due {formatDate(task.due_date)}</p>}
+        {task.review_status === "CHANGES_REQUESTED" && task.review_feedback && <p className="mt-1 line-clamp-2 text-xs text-amber-800">{task.review_feedback}</p>}
       </div>
     </div>
   );
@@ -99,28 +113,17 @@ export default function TaskTable({
   tasks,
   showOwner = false,
   editable = false,
+  reviewable = false,
+  viewerId,
 }: {
   tasks: TaskRow[];
   showOwner?: boolean;
   editable?: boolean;
+  reviewable?: boolean;
+  viewerId?: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-
-  async function updateStatus(id: string, status: string) {
-    setError(null);
-    const res = await fetch(`/api/tasks/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Could not update task status");
-      return;
-    }
-    router.refresh();
-  }
 
   async function deleteTask(id: string) {
     if (!confirm("Delete this task?")) return;
@@ -149,23 +152,15 @@ export default function TaskTable({
   }
 
   function statusControl(t: TaskRow) {
-    return editable ? (
-      <select
-        className="input min-h-0 w-auto min-w-[128px] py-1.5 text-xs font-medium"
-        aria-label={`Status for ${t.content.slice(0, 60)}`}
-        value={t.status}
-        onChange={(e) => updateStatus(t.id, e.target.value)}
-      >
-        <option value="pending">Pending</option>
-        <option value="in-progress">In progress</option>
-        <option value="done">Done</option>
-      </select>
-    ) : (
-      <StatusBadge status={t.status} />
-    );
+    const mode = editable ? "owner" : reviewable && t.user_id !== viewerId ? "reviewer" : "read";
+    return <div className="flex flex-wrap items-center gap-2">
+      <ReviewStatusBadge reviewStatus={t.review_status} status={t.status} />
+      <TaskWorkflowPanel task={t} mode={mode} />
+    </div>;
   }
 
   function deleteButton(t: TaskRow) {
+    if (t.assigned_by_id || ["SUBMITTED", "APPROVED"].includes(t.review_status)) return null;
     return (
       <button onClick={() => deleteTask(t.id)} className="btn-danger-ghost" aria-label="Delete task" title="Delete task">
         <Icon name="trash" size={14} />

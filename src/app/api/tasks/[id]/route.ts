@@ -24,6 +24,9 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
   const updates = await readJson(request);
   if (updates instanceof NextResponse) return updates;
+  const fields = new Set(["content", "type", "task_date", "status", "category", "chapter", "campaign", "priority", "due_date", "delivered_date", "revision_rounds", "version"]);
+  if (Object.keys(updates).some((key) => !fields.has(key))) return NextResponse.json({ error: "Unsupported task field" }, { status: 400 });
+  if (updates.status === "done") return NextResponse.json({ error: "Submit the task for manager review to complete it" }, { status: 400 });
   if (!updates || typeof updates !== "object" || Array.isArray(updates)) {
     return NextResponse.json({ error: "Expected a JSON object" }, { status: 400 });
   }
@@ -71,6 +74,10 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       if (current.version !== existing.version || (updates.version !== undefined && updates.version !== current.version)) {
         throw new BusinessError("This task changed. Refresh and try again.", 409);
       }
+      if (["SUBMITTED", "APPROVED"].includes(current.reviewStatus)) throw new BusinessError("Submitted and approved tasks must use the review workflow", 409);
+      if (current.assignedById && session.user.id === current.userId && Object.keys(updates).some((key) => !["status", "version"].includes(key))) {
+        throw new BusinessError("Assignment details are managed by your manager. Submit your work through the review form.", 403);
+      }
       await assertMonthsOpen(tx, [current.taskDate, patch.taskDate instanceof Date ? patch.taskDate : current.taskDate]);
       const nextStatus = patch.status ?? current.status;
       patch.completedAt = nextStatus === "DONE" ? (current.status === "DONE" ? current.completedAt : new Date()) : null;
@@ -96,6 +103,8 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
       const current = await tx.task.findUnique({ where: { id: params.id } });
       if (!current) throw new BusinessError("Task not found", 404);
       if (session.user.role !== "ADMIN" && current.userId !== session.user.id) throw new BusinessError("Forbidden", 403);
+      if (["SUBMITTED", "APPROVED"].includes(current.reviewStatus)) throw new BusinessError("Reopen or return this task before deleting it", 409);
+      if (current.assignedById && current.userId === session.user.id) throw new BusinessError("Only an administrator can remove an assigned task", 403);
       await assertMonthsOpen(tx, [current.taskDate]);
       await tx.task.delete({ where: { id: current.id } });
       await audit(tx, { id: session.user.id, name: session.user.name ?? "Member" }, "task.delete", current.id, current.content.slice(0, 100), { before: current });
