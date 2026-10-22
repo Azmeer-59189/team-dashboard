@@ -77,6 +77,30 @@ export default function Sidebar({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [resetMsg, setResetMsg] = useState<string | null>(null);
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let pending = false;
+    const refresh = async () => {
+      if (document.hidden || pending) return;
+      pending = true;
+      try {
+        const res = await fetch("/api/notifications?count=true", { cache: "no-store", signal: controller.signal });
+        if (res.ok) { const data = await res.json(); if (!controller.signal.aborted) setUnread(data.unread); }
+      } catch { /* Keep navigation usable during connection failures. */ }
+      finally { pending = false; }
+    };
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 60000);
+    window.addEventListener("notifications-changed", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      controller.abort(); window.clearInterval(timer);
+      window.removeEventListener("notifications-changed", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -212,6 +236,13 @@ export default function Sidebar({
 
         {/* Footer */}
         <div className="space-y-2 p-3">
+          <Link href="/notifications" aria-current={pathname === "/notifications" ? "page" : undefined}
+            aria-label={`Notifications, ${unread} unread`} title={`Notifications (${unread} unread)`}
+            className={`sidebar-item flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-slate-300 ${compact ? "justify-center" : ""} ${pathname === "/notifications" ? "sidebar-item-active" : ""}`}>
+            <Icon name="clipboard" size={18} />
+            {!compact && <span className="flex-1">Notifications</span>}
+            {unread > 0 && <span className="rounded-full bg-brand-500 px-1.5 text-xs text-white">{unread > 99 ? "99+" : unread}</span>}
+          </Link>
           {DEMO_MODE && role === "admin" && (
             <button
               type="button"

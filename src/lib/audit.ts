@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import { notifyTaskEvent } from "./notifications";
 
 export function memberSnapshot(user: { id: string; fullName: string; email: string; role: string; departmentId: string | null; jobTitle: string | null; archivedAt: Date | null }) {
   const { id, fullName, email, role, departmentId, jobTitle, archivedAt } = user;
@@ -9,8 +10,10 @@ export function memberSnapshot(user: { id: string; fullName: string; email: stri
 export async function audit(tx: Prisma.TransactionClient, actor: { id: string; name: string }, action: string,
   targetId: string, targetLabel: string, details?: unknown) {
   // JSON round-trip converts dates and strips undefined; callers must exclude passwords.
-  return tx.auditLog.create({ data: { actorId: actor.id, actorName: actor.name, action, targetId, targetLabel,
+  const event = await tx.auditLog.create({ data: { actorId: actor.id, actorName: actor.name, action, targetId, targetLabel,
     ...(details === undefined ? {} : { details: JSON.parse(JSON.stringify(details)) }) } });
+  await notifyTaskEvent(tx, actor.id, action, details);
+  return event;
 }
 
 export async function logAudit(actor: { id: string; name: string }, action: string, targetLabel: string) {

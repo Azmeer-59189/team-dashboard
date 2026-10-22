@@ -1,5 +1,7 @@
 # Release checks and assignment management
 
+The subsequent notifications release adds migration `20261022020000_notifications`. Apply migrations and run the same readiness check before that release as well. See [NOTIFICATIONS.md](NOTIFICATIONS.md) for delivery, privacy, and API behavior.
+
 ## Production deployment protection
 
 Keep Vercel's Build Command set to **`npm run build`**. Before Next.js builds a Production deployment (`VERCEL_ENV=production`), the build runs a read-only check against **DATABASE_URL**, the application's actual connection. It rejects pending/failed migrations, applied migration files that differ from their recorded checksum, and missing application columns. Windows/Linux line-ending differences are accepted. No database URLs, credentials or user records are logged.

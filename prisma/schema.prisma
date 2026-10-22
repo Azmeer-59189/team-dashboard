@@ -77,6 +77,22 @@ model User {
   tasks       Task[]
   goals       Goal[]
   manualScores ManualScore[] @relation("ScoredUser")
+  notifications Notification[]
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  eventKey  String
+  title     String
+  message   String
+  createdAt DateTime @default(now())
+  readAt    DateTime?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventKey])
+  @@index([userId, createdAt, id])
+  @@index([userId, readAt])
 }
 
 // A department's monthly "why" - what its KPIs are actually in service of.

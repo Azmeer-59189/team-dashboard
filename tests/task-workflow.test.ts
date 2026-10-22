@@ -6,6 +6,7 @@ import { PGlite, type PGliteInterface } from "@electric-sql/pglite";
 import type { Prisma } from "@prisma/client";
 import { applyTaskAction } from "../src/lib/taskWorkflowService";
 import { manageAssignment } from "../src/lib/assignmentManagement";
+import { notifyTaskEvent, markNotificationsRead } from "../src/lib/notifications";
 
 // Bridge the small transaction surface used by the real workflow service to the
 // PostgreSQL test engine. Permission and state-transition logic is not mocked.
@@ -16,7 +17,19 @@ function adapter(sql: Pick<PGliteInterface, "query">) {
     return task ? { ...task, taskDate: task.taskDate instanceof Date ? task.taskDate : new Date(`${String(task.taskDate).slice(0, 10)}T00:00:00Z`), user: await findUser(task.userId) } : null;
   };
   return {
-    user: { findUnique: ({ where }: any) => findUser(where.id) },
+    user: { findUnique: ({ where }: any) => findUser(where.id), findMany: async ({ where }: any) => {
+      const users = (await sql.query<any>('SELECT * FROM "User" WHERE "archivedAt" IS NULL')).rows;
+      return users.filter(user => (!where.id || where.id.in.includes(user.id)) && (!where.role || where.role.in.includes(user.role)));
+    } },
+    notification: {
+      createMany: async ({ data }: any) => {
+        for (const row of data) await sql.query('INSERT INTO "Notification" ("id","userId","eventKey","title","message") VALUES ($1,$2,$3,$4,$5) ON CONFLICT ("userId","eventKey") DO NOTHING', [randomUUID(), row.userId, row.eventKey, row.title, row.message]);
+      },
+      updateMany: async ({ where, data }: any) => {
+        const result = await sql.query('UPDATE "Notification" SET "readAt"=$1 WHERE "userId"=$2 AND "id"=ANY($3::text[]) AND "readAt" IS NULL RETURNING "id"', [data.readAt, where.userId, where.id.in]);
+        return { count: result.rows.length };
+      },
+    },
     objective: { findFirst: async ({ where }: any) => (await sql.query('SELECT * FROM "Objective" WHERE "id"=$1 AND "departmentId"=$2', [where.id, where.departmentId])).rows[0] ?? null },
     task: {
       findUnique: ({ where }: any) => findTask(where.id),
@@ -62,6 +75,7 @@ test("assignment review lifecycle against PostgreSQL", async (t) => {
       UPDATE "Task" SET "assignedById"='lead', "assignedByName"='Original lead' WHERE "id"='legacy';`);
     await db.exec(await readFile("prisma/migrations/20261022000000_task_assignments_reviews/migration.sql", "utf8"));
     await db.exec(await readFile("prisma/migrations/20261022010000_assignment_management/migration.sql", "utf8"));
+    await db.exec(await readFile("prisma/migrations/20261022020000_notifications/migration.sql", "utf8"));
     await db.exec(`INSERT INTO "Task" ("id","userId","departmentId","type","content","taskDate","dueDate","assignedById","assignedByName","assignedAt","updatedAt") VALUES
       ('assigned','member','design','TEXT','Deliver a report','2026-10-22','2026-10-25','lead','Lead',now(),now());`);
     const act = (actor: string, action: Parameters<typeof applyTaskAction>[3], version: number, note = "") => db.transaction((tx) => applyTaskAction(adapter(tx), actor, "assigned", action, version, note));
@@ -155,6 +169,39 @@ test("assignment review lifecycle against PostgreSQL", async (t) => {
       await assert.rejects(manage("lead", { action: "edit", version: 0, reason: "Move to next month", task_date: "2026-11-01" }, "datechange"), /finalized/);
       await db.exec(`DELETE FROM "MonthlyReport" WHERE "periodLabel"='2026-11'; INSERT INTO "MonthlyReport" ("periodLabel","finalizedBy","rows") VALUES ('2026-10','admin','[]');`);
       await assert.rejects(manage("lead", { action: "edit", version: 0, reason: "Move out of closed month", task_date: "2026-11-01" }, "datechange"), /finalized/);
+    });
+    await t.test("submissions notify eligible reviewers, excluding other departments and the owner", async () => {
+      const notices = (await db.query<any>(`SELECT * FROM "Notification" WHERE "eventKey"='assigned:2:task.submit' ORDER BY "userId"`)).rows;
+      assert.deepEqual(notices.map(n => n.userId), ["admin", "lead"]);
+      assert.ok(notices.every(n => !n.message.includes("report") && !n.message.includes("https://")));
+      const approvals = (await db.query<any>(`SELECT "userId" FROM "Notification" WHERE "eventKey"='assigned:5:task.approve'`)).rows;
+      assert.deepEqual(approvals.map(n => n.userId), ["member"]);
+      const reassigned = (await db.query<any>(`SELECT "userId" FROM "Notification" WHERE "eventKey"='assigned:10:task.reassign' ORDER BY "userId"`)).rows;
+      assert.deepEqual(reassigned.map(n => n.userId), ["member", "member2"]);
+    });
+    await t.test("notification events deduplicate and roll back with the task transaction", async () => {
+      const event = { after: { id: "assigned", userId: "member", departmentId: "design", version: 99 } };
+      await db.transaction(tx => notifyTaskEvent(adapter(tx), "lead", "task.assign", event));
+      await db.transaction(tx => notifyTaskEvent(adapter(tx), "lead", "task.assign", event));
+      assert.equal((await db.query<any>(`SELECT count(*)::int AS n FROM "Notification" WHERE "eventKey"='assigned:99:task.assign'`)).rows[0].n, 1);
+      await assert.rejects(db.transaction(async tx => {
+        await notifyTaskEvent(adapter(tx), "lead", "task.assign", { after: { ...event.after, version: 100 } });
+        throw new Error("rollback");
+      }), /rollback/);
+      assert.equal((await db.query<any>(`SELECT count(*)::int AS n FROM "Notification" WHERE "eventKey"='assigned:100:task.assign'`)).rows[0].n, 0);
+    });
+    await t.test("read updates cannot touch someone else's inbox and are idempotent", async () => {
+      const notices = (await db.query<any>(`SELECT "id","userId" FROM "Notification" WHERE "eventKey"='assigned:2:task.submit'`)).rows;
+      const own = notices.find(n => n.userId === "lead");
+      const other = notices.find(n => n.userId === "admin");
+      assert.equal((await markNotificationsRead(adapter(db), "lead", [own.id, other.id])).count, 1);
+      assert.equal((await markNotificationsRead(adapter(db), "lead", [own.id])).count, 0);
+      assert.equal((await db.query<any>('SELECT "readAt" FROM "Notification" WHERE "id"=$1', [other.id])).rows[0].readAt, null);
+    });
+    await t.test("archived recipients receive no new notifications", async () => {
+      await db.exec(`UPDATE "User" SET "archivedAt"=now() WHERE "id"='member'`);
+      await db.transaction(tx => notifyTaskEvent(adapter(tx), "lead", "task.assign", { after: { id: "assigned", userId: "member", departmentId: "design", version: 101 } }));
+      assert.equal((await db.query<any>(`SELECT count(*)::int AS n FROM "Notification" WHERE "eventKey"='assigned:101:task.assign'`)).rows[0].n, 0);
     });
   } finally { await db.close(); }
 });
