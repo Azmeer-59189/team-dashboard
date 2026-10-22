@@ -8,6 +8,7 @@ import { BusinessError } from "./transaction";
 import { assertMonthsOpen } from "./reports";
 import { audit } from "./audit";
 import { priorityToDb } from "./format";
+import { assertAssignmentAvailable } from "./leave";
 
 export function validateAssignmentChange(body: Record<string, unknown>) {
   if (typeof body.action !== "string" || !["edit", "reassign", "cancel"].includes(body.action)) return "Invalid assignment action";
@@ -49,6 +50,9 @@ export async function manageAssignment(tx: Prisma.TransactionClient, actorId: st
     if (body.action === "reassign" && target.id === task.userId) throw new BusinessError("Choose a different assignee");
     const dueDate = body.due_date ? new Date(body.due_date) : task.dueDate;
     if (!dueDate || dueDate < date) throw new BusinessError("Set a deadline on or after the task date");
+    if (body.action === "reassign" || date.getTime() !== task.taskDate.getTime() || dueDate.getTime() !== task.dueDate?.getTime()) {
+      await assertAssignmentAvailable(tx, target.id, date, dueDate);
+    }
     const content = body.content === undefined ? task.content : body.content.trim();
     const validation = validateTaskFields({ type: task.type.toLowerCase(), content });
     if (validation) throw new BusinessError(validation);

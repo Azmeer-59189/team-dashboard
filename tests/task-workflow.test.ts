@@ -31,6 +31,7 @@ function adapter(sql: Pick<PGliteInterface, "query">) {
       },
     },
     objective: { findFirst: async ({ where }: any) => (await sql.query('SELECT * FROM "Objective" WHERE "id"=$1 AND "departmentId"=$2', [where.id, where.departmentId])).rows[0] ?? null },
+    leaveRequest: { findFirst: async ({ where }: any) => (await sql.query('SELECT "id" FROM "LeaveRequest" WHERE "userId"=$1 AND "status"=$2 AND "startDate"<=$3 AND "endDate">=$4 LIMIT 1', [where.userId, where.status, where.startDate.lte, where.endDate.gte])).rows[0] ?? null },
     task: {
       findUnique: ({ where }: any) => findTask(where.id),
       update: async ({ where, data }: any) => {
@@ -76,6 +77,7 @@ test("assignment review lifecycle against PostgreSQL", async (t) => {
     await db.exec(await readFile("prisma/migrations/20261022000000_task_assignments_reviews/migration.sql", "utf8"));
     await db.exec(await readFile("prisma/migrations/20261022010000_assignment_management/migration.sql", "utf8"));
     await db.exec(await readFile("prisma/migrations/20261022020000_notifications/migration.sql", "utf8"));
+    await db.exec(await readFile("prisma/migrations/20261022030000_leave_availability/migration.sql", "utf8"));
     await db.exec(`INSERT INTO "Task" ("id","userId","departmentId","type","content","taskDate","dueDate","assignedById","assignedByName","assignedAt","updatedAt") VALUES
       ('assigned','member','design','TEXT','Deliver a report','2026-10-22','2026-10-25','lead','Lead',now(),now());`);
     const act = (actor: string, action: Parameters<typeof applyTaskAction>[3], version: number, note = "") => db.transaction((tx) => applyTaskAction(adapter(tx), actor, "assigned", action, version, note));

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import AvailabilityHint from "./AvailabilityHint";
 
 type Member = { id: string; fullName: string; departmentId: string | null; department: { name: string } | null };
 export default function AssignTaskForm({ members, objectives, today }: {
@@ -49,6 +50,7 @@ export default function AssignTaskForm({ members, objectives, today }: {
         <label className="block"><span className="label">Due date</span><input required type="date" min={taskDate} className="input" value={dueDate} disabled={busy} onChange={(e) => setDueDate(e.target.value)} /></label>
       </div>
       {availableObjectives.length > 0 && <label className="block"><span className="label">Objective (optional)</span><select className="input" value={objectiveId} disabled={busy} onChange={(e) => setObjectiveId(e.target.value)}><option value="">No objective</option>{availableObjectives.map((o) => <option key={o.id} value={o.id}>{o.title}</option>)}</select></label>}
+      <AvailabilityHint userId={memberId} from={taskDate} to={dueDate} />
       {error && <p role="alert" className="alert-error">{error}</p>}
       {success && <p role="status" className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{success}</p>}
       <div className="flex justify-end"><button disabled={busy} className="btn-primary">{busy ? "Assigning…" : "Assign task"}</button></div>

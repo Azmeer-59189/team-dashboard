@@ -10,6 +10,7 @@ import { audit } from "@/lib/audit";
 import { typeToDb, priorityToDb, formatTask } from "@/lib/format";
 import { serverError } from "@/lib/apiError";
 import type { Session } from "next-auth";
+import { assertAssignmentAvailable } from "@/lib/leave";
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -32,6 +33,7 @@ export async function POST(request: Request) {
       if (!owner || owner.archivedAt) throw new BusinessError("Active assignee not found", 404);
       if (!canManageUser(scope, owner)) throw new BusinessError("You cannot assign work to this person", 403);
       await assertMonthsOpen(tx, [new Date(task_date)]);
+      await assertAssignmentAvailable(tx, owner.id, new Date(task_date), new Date(due_date));
       if (objective_id && (!owner.departmentId || !await tx.objective.findFirst({ where: { id: objective_id, departmentId: owner.departmentId } }))) {
         throw new BusinessError("Objective must belong to the assignee's department");
       }

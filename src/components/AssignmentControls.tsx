@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { TaskRow } from "./TaskTable";
+import AvailabilityHint from "./AvailabilityHint";
 
 export default function AssignmentControls({ task, members, onSaved, onBusy }: {
   task: TaskRow; members: { id: string; fullName: string }[]; onSaved: () => void; onBusy: (busy: boolean) => void;
@@ -45,6 +46,7 @@ export default function AssignmentControls({ task, members, onSaved, onBusy }: {
         {task.objective_id && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={clearObjective} disabled={busy} onChange={(e) => setClearObjective(e.target.checked)} />Clear linked objective</label>}
       </>}
       <label className="block"><span className="label">Reason (required)</span><textarea required rows={2} maxLength={5000} className="input" value={reason} disabled={busy} onChange={(e) => setReason(e.target.value)} placeholder="Explain the change for the task history." /></label>
+      {action !== "cancel" && <AvailabilityHint userId={action === "reassign" ? owner : task.user_id} from={date} to={due} />}
       {error && <p role="alert" className="alert-error">{error}</p>}
       <button disabled={busy || !reason.trim()} className="btn-secondary">{busy ? "Saving…" : action === "cancel" ? "Cancel assignment" : "Save assignment"}</button>
     </form>

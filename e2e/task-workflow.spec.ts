@@ -38,7 +38,7 @@ async function assign(page: Page, brief: string) {
   const date = await form.getByLabel("Task date", { exact: true }).inputValue();
   await form.getByLabel("Due date", { exact: true }).fill(date);
   await form.getByRole("button", { name: "Assign task", exact: true }).click();
-  await expect(form.getByRole("status")).toContainText("Task assigned");
+  await expect(form.getByRole("status").filter({ hasText: "Task assigned" })).toBeVisible();
   return task(page.context(), brief);
 }
 async function notice(page: Page, title: string) {

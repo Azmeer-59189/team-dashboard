@@ -15,6 +15,13 @@ enum Role {
   MEMBER
 }
 
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 enum TaskType {
   TEXT
   LINK
@@ -78,6 +85,28 @@ model User {
   goals       Goal[]
   manualScores ManualScore[] @relation("ScoredUser")
   notifications Notification[]
+  leaveRequests LeaveRequest[]
+}
+
+model LeaveRequest {
+  id             String      @id @default(cuid())
+  userId         String
+  startDate      DateTime    @db.Date
+  endDate        DateTime    @db.Date
+  reason         String      @db.Text
+  status         LeaveStatus @default(PENDING)
+  version        Int         @default(0)
+  reviewedById   String?
+  reviewedByName String?
+  reviewedAt     DateTime?
+  reviewNote     String?     @db.Text
+  cancelledAt    DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, startDate, endDate])
+  @@index([createdAt, id])
 }
 
 model Notification {

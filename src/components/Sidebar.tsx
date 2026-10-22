@@ -23,6 +23,7 @@ function navGroups(role: "admin" | "lead" | "member"): NavGroup[] {
         links: [
           { href: "/member", label: "My Dashboard", icon: "home" },
           { href: "/member/tasks", label: "My Tasks", icon: "check-square" },
+          { href: "/leave", label: "Leave & availability", icon: "calendar" },
         ],
       },
       { title: "Settings", links: [account] },
@@ -35,6 +36,7 @@ function navGroups(role: "admin" | "lead" | "member"): NavGroup[] {
         { href: "/admin", label: "Overview", icon: "grid" },
         { href: "/admin/my-tasks", label: "My Tasks", icon: "check-square" },
         { href: "/admin/assignments", label: "Assignments & reviews", icon: "clipboard" },
+        { href: "/leave", label: "Leave & availability", icon: "calendar" },
         { href: "/admin/tasks", label: "All Tasks", icon: "list" },
       ],
     },

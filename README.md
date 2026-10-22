@@ -1,5 +1,7 @@
 # Team Dashboard
 
+Leave requests, approval, availability checks, and the required migration are documented in [LEAVE.md](./LEAVE.md).
+
 Release readiness checks and assignment editing/reassignment/cancellation are documented in [DEPLOYMENT.md](./DEPLOYMENT.md). This release requires migration `20261022010000_assignment_management` before production builds will pass.
 
 Task assignment and approval workflow: see [TASK-REVIEWS.md](./TASK-REVIEWS.md) for usage, permissions, API details, and the new migration required before deployment.

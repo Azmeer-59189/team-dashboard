@@ -37,6 +37,7 @@ export default function NotificationInbox({ manager }: { manager: boolean }) {
       <button className="btn-secondary" disabled={busy || loading} onClick={() => void load()}>Refresh</button>
       <button className="btn-secondary" disabled={busy || loading || !unread.length} onClick={() => void mark(unread.map(row => row.id))}>Mark displayed as read{unread.length ? ` (${unread.length})` : ""}</button>
       <Link className="btn-primary" href={manager ? "/admin/my-tasks" : "/member/tasks"}>My Tasks</Link>
+      <Link className="btn-secondary" href="/leave">Leave & availability</Link>
       {manager && <Link className="btn-secondary" href="/admin/assignments">Assignments & reviews</Link>}
     </div>
     {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
