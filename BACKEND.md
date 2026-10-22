@@ -88,3 +88,5 @@ npm run build
 ```
 
 `test:db` runs the actual PostgreSQL migration SQL against an isolated in-memory PGlite database with legacy records. It checks backfills, constraints, retained history, transaction rollback and the real login-counter SQL. It never connects to the deployed database. Service tests cover scoring, history selection, report locks and permission filters. These checks do not replace an end-to-end test against your deployed NextAuth/Neon environment or load testing concurrent Prisma transactions.
+
+`npm run test:e2e` adds desktop and phone-width browser coverage against an isolated production build with real NextAuth credentials sign-in, Prisma and a local PostgreSQL protocol server. It checks assignment through approval/reopening, notifications, reassignment and cancellation, including forbidden actions through authenticated HTTP requests. See [E2E.md](E2E.md). Hosted deployment smoke checks and production concurrency/load tests remain separate.

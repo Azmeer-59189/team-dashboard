@@ -13,6 +13,7 @@ Task assignment and approval workflow: see [TASK-REVIEWS.md](./TASK-REVIEWS.md) 
 - Overview charts and totals aggregate all matching tasks in PostgreSQL, without a 5,000-task cutoff. CSV exports include all matches and neutralize spreadsheet formula prefixes in text cells. Exports currently assemble the file in memory.
 - Historical composite scores use the requested month for both Core and Behavioural components.
 - Run `npm test` for validation, permission-scope, and date-period regression tests and `npx tsc --noEmit` for type checking.
+- Run `npm run test:e2e` for browser checks of assignments, reviews, notifications and access controls against a fresh local database. Install Chromium first with `npx playwright install chromium`; setup and CI details are in [E2E.md](./E2E.md).
 - Changing or resetting a password signs out every session that was created with the old password (including the person's own; they are asked to sign in again).
 - Emails are matched case-insensitively at sign-in and when creating accounts, and new accounts are stored in lowercase.
 - Nobody can rate themselves or set their own KPI goal. A Lead may only rate, set goals for, reset passwords for, or remove ordinary members of their own department. A Lead with no department (for example after their department is deleted) has no management access until an admin reassigns them.
