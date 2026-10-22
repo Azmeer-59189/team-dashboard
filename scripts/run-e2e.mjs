@@ -4,6 +4,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { createWriteStream } from 'node:fs';
 import { spawn } from 'node:child_process';
 import bcrypt from 'bcryptjs';
+import { closeTestDatabase } from './e2e-cleanup.mjs';
 
 // Never load .env or accept a caller-supplied database/base URL. Both endpoints
 // belong to fresh local processes; a port conflict fails instead of reusing one.
@@ -71,7 +72,6 @@ try {
 } finally {
   await stop(running);
   await stop(app);
-  await server.stop();
-  await db.close();
+  await closeTestDatabase(server, db);
   log.end();
 }
